@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>IE Chair Dashboard</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+    }
+
+    select, button {
+      font-size: 16px;
+      padding: 8px;
+    }
+
+    .cards {
+      display: flex;
+      gap: 20px;
+      margin: 20px 0;
+    }
+
+    .card {
+      flex: 1;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .value {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    canvas {
+      margin-top: 30px;
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+<h1>IE Chair Production Dashboard</h1>
+
+
+<div class="controls">
+
+  Group：
+
+  <select id="groupSelect">
+
+    <option value="G01">G01</option>
+    <option value="G02">G02</option>
+    <option value="G03" selected>G03</option>
+    <option value="G04">G04</option>
+    <option value="G05">G05</option>
+    <option value="G06">G06</option>
+    <option value="G07">G07</option>
+    <option value="G08">G08</option>
+    <option value="G09">G09</option>
+    <option value="G10">G10</option>
+    <option value="G11">G11</option>
+    <option value="G12">G12</option>
+
+  </select>
+
+  <button onclick="loadData()">
+    立即更新
+  </button>
+
+</div>
+
+
+<div class="cards">
+
+  <div class="card">
+
+    <div>完成紀錄</div>
+
+    <div
+      class="value"
+      id="totalCount">
+      -
+    </div>
+
+  </div>
+
+
+  <div class="card">
+
+    <div>平均作業時間</div>
+
+    <div
+      class="value"
+      id="avgDuration">
+      -
+    </div>
+
+  </div>
+
+</div>
+
+
+<p>
+  最後更新：
+  <span id="lastUpdate">
+    -
+  </span>
+</p>
+
+
+<h2>各工作站平均作業時間</h2>
+
+<canvas id="stationChart"></canvas>
+
+
+<script>
+
+const SUPABASE_URL =
+  "https://iomsrjkrvuzrsluirtdj.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
+
+
+let stationChart = null;
+
+
+// ==================================
+// 從 Supabase 讀資料
+// ==================================
+
+async function loadData() {
+
+  const group =
+    document
+      .getElementById("groupSelect")
+      .value;
+
+
+  const url =
+    SUPABASE_URL +
+    "/rest/v1/events" +
+    "?select=*" +
+    "&group_id=eq." +
+    encodeURIComponent(group) +
+    "&status=eq.COMPLETED";
+
+
+  try {
+
+    const response =
+      await fetch(url, {
+
+        headers: {
+
+          "apikey":
+            SUPABASE_KEY,
+
+          "Authorization":
+            "Bearer " +
+            SUPABASE_KEY
+
+        }
+
+      });
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Supabase 讀取失敗"
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    calculateKPI(data);
+
+    drawChart(data);
+
+
+    document
+      .getElementById("lastUpdate")
+      .textContent =
+      new Date()
+        .toLocaleTimeString();
+
+
+  } catch (error) {
+
+    console.error(error);
+
+  }
+
+}
+
+
+
+// ==================================
+// 計算 KPI
+// ==================================
+
+function calculateKPI(data) {
+
+
+  // 完成紀錄數
+
+  const total =
+    data.length;
+
+
+  document
+    .getElementById("totalCount")
+    .textContent =
+    total;
+
+
+
+  // 平均作業時間
+
+  if (total === 0) {
+
+    document
+      .getElementById("avgDuration")
+      .textContent =
+      "-";
+
+    return;
+
+  }
+
+
+  const totalDuration =
+    data.reduce(
+      (sum, row) =>
+        sum +
+        Number(row.duration_sec),
+      0
+    );
+
+
+  const average =
+    totalDuration / total;
+
+
+  document
+    .getElementById("avgDuration")
+    .textContent =
+    average.toFixed(1) +
+    " 秒";
+
+}
+
+
+
+// ==================================
+// 各 Station 平均時間
+// ==================================
+
+function drawChart(data) {
+
+
+  const stationData = {};
+
+
+  data.forEach(row => {
+
+    const station =
+      row.station_id;
+
+    const duration =
+      Number(row.duration_sec);
+
+
+    if (!stationData[station]) {
+
+      stationData[station] = [];
+
+    }
+
+
+    stationData[station]
+      .push(duration);
+
+  });
+
+
+
+  const stations =
+    Object.keys(stationData)
+      .sort();
+
+
+  const averages =
+    stations.map(station => {
+
+      const values =
+        stationData[station];
+
+
+      const sum =
+        values.reduce(
+          (a, b) => a + b,
+          0
+        );
+
+
+      return (
+        sum / values.length
+      );
+
+    });
+
+
+
+  // 如果原本有圖
+  // 先刪掉
+
+  if (stationChart) {
+
+    stationChart.destroy();
+
+  }
+
+
+
+  const ctx =
+    document
+      .getElementById("stationChart");
+
+
+  stationChart =
+    new Chart(ctx, {
+
+      type: "bar",
+
+      data: {
+
+        labels:
+          stations,
+
+        datasets: [{
+
+          label:
+            "平均作業時間（秒）",
+
+          data:
+            averages
+
+        }]
+
+      },
+
+
+      options: {
+
+        responsive: true,
+
+        scales: {
+
+          y: {
+
+            beginAtZero: true
+
+          }
+
+        }
+
+      }
+
+    });
+
+}
+
+
+
+// ==================================
+// Group 改變時立即更新
+// ==================================
+
+document
+  .getElementById("groupSelect")
+  .addEventListener(
+    "change",
+    loadData
+  );
+
+
+
+// ==================================
+// 第一次開網頁立即讀資料
+// ==================================
+
+loadData();
+
+
+
+// ==================================
+// 每 10 秒自動更新
+// ==================================
+
+setInterval(
+  loadData,
+  10000
+);
+
+</script>
+
+</body>
+</html>
