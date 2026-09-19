@@ -5,9 +5,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IE Chair Production</title>
-  
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  
 
   <style>
     body {
@@ -16,46 +15,41 @@
       margin: 40px auto;
       padding: 20px;
     }
-	
-	.form-container {
-	  display: flex;
-	  gap: 15px;
-	  margin-bottom: 25px;
-	}
+
+    .form-container {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
     .form-group {
       flex: 1;
     }
 
     label {
       display: block;
-	  font-size: 18px;
-	  font-weight: bold;
-	  text-align: center;
-	  margin-bottom: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 8px;
     }
 
     select {
       width: 100%;
-	  box-sizing: border-box;
-	  font-size: 16px;
-	  padding: 10px;
-	  border: 1px solid #ccc;
-	  border-radius: 6px;
-	  background-color: white;
-    }
-
-    button {
-      font-size: 20px;
-      padding: 15px 25px;
-      margin: 5px;
+      box-sizing: border-box;
+      font-size: 16px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background-color: white;
     }
 
     #status {
       margin-top: 20px;
       font-weight: bold;
+      text-align: center;
     }
-	
-	/* QR Code 顯示區域樣式 */
+
     .qr-container {
       margin-top: 30px;
       text-align: center;
@@ -64,6 +58,7 @@
       align-items: center;
       gap: 10px;
     }
+
     #qrcode img {
       border: 1px solid #ccc;
       padding: 10px;
@@ -71,131 +66,182 @@
     }
   </style>
 </head>
+
 <body>
 
   <h1>IE Chair Production</h1>
-<br>
-<br>
 
-<div class="form-container">
-  <!-- Group -->
-  <div class="form-group">
-    <label for="group">Group 👨🏻‍🤝‍👨🏻</label>
-    <select id="group">
-      <option value="">請選擇 Group</option>
-      <option value="G01">G01</option>
-      <option value="G02">G02</option>
-      <option value="G03">G03</option>
-	  <option value="G04">G04</option>
-	  <option value="G05">G05</option>
-	  <option value="G06">G06</option>
-    </select>
+  <div class="form-container">
+
+    <!-- Group -->
+    <div class="form-group">
+      <label for="group">Group 👨🏻‍🤝‍👨🏻</label>
+
+      <select id="group">
+        <option value="">請選擇 Group</option>
+        <option value="G01">G01</option>
+        <option value="G02">G02</option>
+        <option value="G03">G03</option>
+        <option value="G04">G04</option>
+        <option value="G05">G05</option>
+        <option value="G06">G06</option>
+      </select>
+    </div>
+
+    <!-- Product -->
+    <div class="form-group">
+      <label for="product">Product 🛠</label>
+
+      <select id="product">
+        <option value="">請選擇 Product</option>
+        <option value="P001">P001</option>
+        <option value="P002">P002</option>
+        <option value="P003">P003</option>
+        <option value="P004">P004</option>
+        <option value="P005">P005</option>
+        <option value="P006">P006</option>
+      </select>
+    </div>
+
+    <!-- Station -->
+    <div class="form-group">
+      <label for="station">Station 🏭</label>
+
+      <select id="station">
+        <option value="">請選擇 Station</option>
+        <option value="ST01">ST01</option>
+        <option value="ST02">ST02</option>
+        <option value="ST03">ST03</option>
+        <option value="ST04">ST04</option>
+        <option value="ST05">ST05</option>
+        <option value="ST06">ST06</option>
+      </select>
+    </div>
+
   </div>
 
-  <!-- Product -->
-  <div class="form-group">
-    <label for="product">Product 🛠</label>
-    <select id="product">
-      <option value="">請選擇 Product</option>
-      <option value="P001">P001</option>
-      <option value="P002">P002</option>
-      <option value="P003">P003</option>
-	  <option value="P004">P004</option>
-	  <option value="P005">P005</option>
-	  <option value="P006">P006</option>
-    </select>
-  </div>
+  <p id="status">請選擇 Group / Product / Station</p>
 
-  <!-- Station -->
-  <div class="form-group">
-    <label for="station">Station 🏭</label>
-    <select id="station">
-      <option value="">請選擇 Station</option>
-      <option value="ST01">ST01</option>
-      <option value="ST02">ST02</option>
-      <option value="ST03">ST03</option>
-	  <option value="ST04">ST04</option>
-	  <option value="ST05">ST05</option>
-	  <option value="ST06">ST06</option>
-    </select>
-  </div>
-</div>
-
-  <button id="startBtn">START</button>
-  <button id="finishBtn" disabled>FINISH</button>
-
-  <p id="status">等待操作</p>
-  <!-- 顯示 QR Code 的區塊 -->
   <div class="qr-container">
     <div id="qrcode"></div>
-    <p id="qr-text" style="font-size: 14px; color: #666;"></p>
+
+    <p id="qr-text"
+       style="font-size: 14px; color: #666;">
+    </p>
   </div>
 
+
   <script>
-  // =========================
-  // Supabase 設定
-  // =========================
-  const SUPABASE_URL =
-    "https://iomsrjkrvuzrsluirtdj.supabase.co";
-  const SUPABASE_KEY =
-    "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
-  // =========================
-  // 取得下拉選單
-  // =========================
-  const groupSelect = document.getElementById("group");
-  const productSelect = document.getElementById("product");
-  const stationSelect = document.getElementById("station");
 
-  const qrcodeDiv = document.getElementById("qrcode");
-  const qrText = document.getElementById("qr-text");
-  const status = document.getElementById("status");
+    // =========================
+    // 取得 HTML 元件
+    // =========================
 
-	  
-  // =========================
-  // 檢查三個選單是否都選好了
-  // =========================
-  function generateQRCode() {
-    const group = groupSelect.value;
-    const product = productSelect.value;
-    const station = stationSelect.value;
+    const groupSelect =
+      document.getElementById("group");
 
-    // 還沒全部選完
-    if (!group || !product || !station) {
-      // 清除 QR Code
+    const productSelect =
+      document.getElementById("product");
+
+    const stationSelect =
+      document.getElementById("station");
+
+    const qrcodeDiv =
+      document.getElementById("qrcode");
+
+    const qrText =
+      document.getElementById("qr-text");
+
+    const status =
+      document.getElementById("status");
+
+
+    // =========================
+    // 產生 QR Code
+    // =========================
+
+    function generateQRCode() {
+
+      const group = groupSelect.value;
+      const product = productSelect.value;
+      const station = stationSelect.value;
+
+
+      // 尚未全部選擇
+      if (!group || !product || !station) {
+
+        qrcodeDiv.innerHTML = "";
+        qrText.textContent = "";
+
+        status.textContent =
+          "請選擇 Group / Product / Station";
+
+        return;
+      }
+
+
+      // =========================
+      // QR Code 要開啟的網址
+      // =========================
+
+      const targetUrl =
+        `https://lctsaiO365.github.io/ie_chair_test/shen_ver.html` +
+        `?group=${encodeURIComponent(group)}` +
+        `&product=${encodeURIComponent(product)}` +
+        `&station=${encodeURIComponent(station)}`;
+
+
+      // 清除舊 QR Code
+
       qrcodeDiv.innerHTML = "";
-      qrText.textContent = "";
-      return;
+
+
+      // 產生新的 QR Code
+
+      new QRCode(qrcodeDiv, {
+
+        text: targetUrl,
+
+        width: 250,
+
+        height: 250,
+
+        correctLevel:
+          QRCode.CorrectLevel.H
+
+      });
+
+
+      // 顯示狀態
+
+      qrText.textContent =
+        `${group} / ${product} / ${station}`;
+
+      status.textContent =
+        "QR Code 已產生，第一次掃描 = START，第二次掃描 = FINISH";
     }
 
-    // 組合 QR Code 要開啟的網址
-    const targetUrl =
-      `https://lctsaiO365.github.io/ie_chair_test/shen_ver.html?group=${encodeURIComponent(group)}&product=${encodeURIComponent(product)}&station=${encodeURIComponent(station)}`;
 
-    // 清除舊 QR Code
-    qrcodeDiv.innerHTML = "";
-    // 產生 QR Code
-    new QRCode(qrcodeDiv, {
-      text: targetUrl,
-      width: 200,
-      height: 200,
-      correctLevel: QRCode.CorrectLevel.H
-    });
+    // =========================
+    // 下拉選單改變
+    // =========================
 
-    // 顯示文字
-    qrText.textContent =
-      `QR Code 已產生：${group} / ${product} / ${station}`;
-    status.textContent =
-      `已選擇：${group} / ${product} / ${station}`;
-  }
+    groupSelect.addEventListener(
+      "change",
+      generateQRCode
+    );
 
-  // =========================
-  // 三個下拉選單發生變化時
-  // 自動檢查並產生 QR Code
-  // =========================
-  groupSelect.addEventListener("change", generateQRCode);
-  productSelect.addEventListener("change", generateQRCode);
-  stationSelect.addEventListener("change", generateQRCode);
-</script>
+    productSelect.addEventListener(
+      "change",
+      generateQRCode
+    );
+
+    stationSelect.addEventListener(
+      "change",
+      generateQRCode
+    );
+
+  </script>
 
 </body>
 </html>
