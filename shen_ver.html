@@ -125,7 +125,7 @@
   <button id="finishBtn" disabled>FINISH</button>
 
   <p id="status">等待操作</p>
-  <!-- 新增：用來顯示 QR Code 的區塊 -->
+  <!-- 顯示 QR Code 的區塊 -->
   <div class="qr-container">
     <div id="qrcode"></div>
     <p id="qr-text" style="font-size: 14px; color: #666;"></p>
@@ -150,39 +150,30 @@
   const qrText = document.getElementById("qr-text");
   const status = document.getElementById("status");
 
-
+	  
   // =========================
   // 檢查三個選單是否都選好了
   // =========================
   function generateQRCode() {
-
     const group = groupSelect.value;
     const product = productSelect.value;
     const station = stationSelect.value;
 
     // 還沒全部選完
     if (!group || !product || !station) {
-
       // 清除 QR Code
       qrcodeDiv.innerHTML = "";
       qrText.textContent = "";
-
       return;
     }
 
-    // =========================
     // 組合 QR Code 要開啟的網址
-    // =========================
     const targetUrl =
       `https://lctsaiO365.github.io/ie_chair_test/shen_ver.html?group=${encodeURIComponent(group)}&product=${encodeURIComponent(product)}&station=${encodeURIComponent(station)}`;
 
-    // =========================
     // 清除舊 QR Code
-    // =========================
     qrcodeDiv.innerHTML = "";
-    // =========================
     // 產生 QR Code
-    // =========================
     new QRCode(qrcodeDiv, {
       text: targetUrl,
       width: 200,
@@ -190,10 +181,7 @@
       correctLevel: QRCode.CorrectLevel.H
     });
 
-
-    // =========================
     // 顯示文字
-    // =========================
     qrText.textContent =
       `QR Code 已產生：${group} / ${product} / ${station}`;
     status.textContent =
