@@ -2,246 +2,507 @@
 <html lang="zh-TW">
 
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
   <title>IE Chair Production</title>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
   <style>
+
     body {
       font-family: Arial, sans-serif;
-      max-width: 520px;
-      margin: 40px auto;
-      padding: 20px;
-    }
-
-    .form-container {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .form-group {
-      flex: 1;
-    }
-
-    label {
-      display: block;
-      font-size: 18px;
-      font-weight: bold;
+      margin: 0;
+      padding: 30px 20px;
+      background: #f5f5f5;
       text-align: center;
-      margin-bottom: 8px;
     }
 
-    select {
-      width: 100%;
-      box-sizing: border-box;
-      font-size: 16px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      background-color: white;
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px 20px;
+      border-radius: 15px;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      margin-bottom: 30px;
+    }
+
+    .data {
+      font-size: 20px;
+      margin: 12px 0;
+    }
+
+    .label {
+      font-weight: bold;
     }
 
     #status {
-      margin-top: 20px;
-      font-weight: bold;
-      text-align: center;
-    }
-
-    .qr-container {
       margin-top: 30px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
+      padding: 25px 10px;
+      border-radius: 12px;
+      font-size: 32px;
+      font-weight: bold;
     }
 
-    #qrcode img {
-      border: 1px solid #ccc;
-      padding: 10px;
-      background: #fff;
+    .starting {
+      background: #e8f5e9;
+      color: #2e7d32;
     }
+
+    .finishing {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .loading {
+      background: #eeeeee;
+      color: #555;
+    }
+
+    #message {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #666;
+    }
+
   </style>
+
 </head>
+
 
 <body>
 
-  <h1>IE Chair Production</h1>
+  <div class="container">
 
-  <div class="form-container">
+    <h1>IE Chair Production</h1>
 
-    <!-- Group -->
-    <div class="form-group">
-      <label for="group">Group 👨🏻‍🤝‍👨🏻</label>
 
-      <select id="group">
-        <option value="">請選擇 Group</option>
-        <option value="G01">G01</option>
-        <option value="G02">G02</option>
-        <option value="G03">G03</option>
-        <option value="G04">G04</option>
-        <option value="G05">G05</option>
-        <option value="G06">G06</option>
-      </select>
+    <!-- QR Code 帶進來的資料 -->
+
+    <div class="data">
+      <span class="label">Group：</span>
+      <span id="group">---</span>
     </div>
 
-    <!-- Product -->
-    <div class="form-group">
-      <label for="product">Product 🛠</label>
-
-      <select id="product">
-        <option value="">請選擇 Product</option>
-        <option value="P001">P001</option>
-        <option value="P002">P002</option>
-        <option value="P003">P003</option>
-        <option value="P004">P004</option>
-        <option value="P005">P005</option>
-        <option value="P006">P006</option>
-      </select>
+    <div class="data">
+      <span class="label">Product：</span>
+      <span id="product">---</span>
     </div>
 
-    <!-- Station -->
-    <div class="form-group">
-      <label for="station">Station 🏭</label>
-
-      <select id="station">
-        <option value="">請選擇 Station</option>
-        <option value="ST01">ST01</option>
-        <option value="ST02">ST02</option>
-        <option value="ST03">ST03</option>
-        <option value="ST04">ST04</option>
-        <option value="ST05">ST05</option>
-        <option value="ST06">ST06</option>
-      </select>
+    <div class="data">
+      <span class="label">Station：</span>
+      <span id="station">---</span>
     </div>
+
+
+    <!-- 執行結果 -->
+
+    <div id="status"
+         class="loading">
+
+      處理中...
+
+    </div>
+
+
+    <div id="message"></div>
 
   </div>
 
-  <p id="status">請選擇 Group / Product / Station</p>
 
-  <div class="qr-container">
-    <div id="qrcode"></div>
-
-    <p id="qr-text"
-       style="font-size: 14px; color: #666;">
-    </p>
-  </div>
+<script>
 
 
-  <script>
+// ==================================================
+// Supabase 設定
+// ==================================================
 
-    // =========================
-    // 取得 HTML 元件
-    // =========================
+const SUPABASE_URL =
+  "https://iomsrjkrvuzrsluirtdj.supabase.co";
 
-    const groupSelect =
-      document.getElementById("group");
-
-    const productSelect =
-      document.getElementById("product");
-
-    const stationSelect =
-      document.getElementById("station");
-
-    const qrcodeDiv =
-      document.getElementById("qrcode");
-
-    const qrText =
-      document.getElementById("qr-text");
-
-    const status =
-      document.getElementById("status");
+const SUPABASE_KEY =
+  "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
 
 
-    // =========================
-    // 產生 QR Code
-    // =========================
+// ==================================================
+// HTML 元件
+// ==================================================
 
-    function generateQRCode() {
+const groupElement =
+  document.getElementById("group");
 
-      const group = groupSelect.value;
-      const product = productSelect.value;
-      const station = stationSelect.value;
+const productElement =
+  document.getElementById("product");
 
+const stationElement =
+  document.getElementById("station");
 
-      // 尚未全部選擇
-      if (!group || !product || !station) {
+const statusElement =
+  document.getElementById("status");
 
-        qrcodeDiv.innerHTML = "";
-        qrText.textContent = "";
-
-        status.textContent =
-          "請選擇 Group / Product / Station";
-
-        return;
-      }
+const messageElement =
+  document.getElementById("message");
 
 
-      // =========================
-      // QR Code 要開啟的網址
-      // =========================
+// ==================================================
+// 從 QR Code URL 取得資料
+// ==================================================
 
-      const targetUrl =
-        `https://lctsaiO365.github.io/ie_chair_test/shen_ver.html` +
-        `?group=${encodeURIComponent(group)}` +
-        `&product=${encodeURIComponent(product)}` +
-        `&station=${encodeURIComponent(station)}`;
+const params =
+  new URLSearchParams(window.location.search);
 
 
-      // 清除舊 QR Code
+const group =
+  params.get("group");
 
-      qrcodeDiv.innerHTML = "";
+const product =
+  params.get("product");
+
+const station =
+  params.get("station");
 
 
-      // 產生新的 QR Code
+// ==================================================
+// 顯示 QR Code 帶進來的資料
+// ==================================================
 
-      new QRCode(qrcodeDiv, {
+groupElement.textContent =
+  group || "---";
 
-        text: targetUrl,
+productElement.textContent =
+  product || "---";
 
-        width: 250,
+stationElement.textContent =
+  station || "---";
 
-        height: 250,
 
-        correctLevel:
-          QRCode.CorrectLevel.H
+// ==================================================
+// 檢查 QR Code 資料
+// ==================================================
+
+if (!group || !product || !station) {
+
+  showError(
+    "QR Code 資料不完整"
+  );
+
+} else {
+
+  // 有資料
+  // 直接開始執行
+
+  processScan();
+
+}
+
+
+// ==================================================
+// 掃描處理
+// ==================================================
+
+async function processScan() {
+
+  try {
+
+    statusElement.className =
+      "loading";
+
+    statusElement.textContent =
+      "處理中...";
+
+
+    // ==================================================
+    // 查詢這個 Group / Product / Station
+    // 是否存在尚未完成的紀錄
+    // ==================================================
+
+    const queryUrl =
+      SUPABASE_URL +
+      "/rest/v1/production_records" +
+
+      "?group_code=eq." +
+      encodeURIComponent(group) +
+
+      "&product_code=eq." +
+      encodeURIComponent(product) +
+
+      "&station_code=eq." +
+      encodeURIComponent(station) +
+
+      "&finish_time=is.null" +
+
+      "&select=*";
+
+
+    const response =
+      await fetch(queryUrl, {
+
+        method: "GET",
+
+        headers: {
+
+          "apikey":
+            SUPABASE_KEY,
+
+          "Authorization":
+            "Bearer " + SUPABASE_KEY
+
+        }
 
       });
 
 
-      // 顯示狀態
+    if (!response.ok) {
 
-      qrText.textContent =
-        `${group} / ${product} / ${station}`;
+      throw new Error(
+        "無法查詢資料庫"
+      );
 
-      status.textContent =
-        "QR Code 已產生，第一次掃描 = START，第二次掃描 = FINISH";
     }
 
 
-    // =========================
-    // 下拉選單改變
-    // =========================
+    const records =
+      await response.json();
 
-    groupSelect.addEventListener(
-      "change",
-      generateQRCode
+
+    // ==================================================
+    // 沒有進行中的紀錄
+    //
+    // → 第一次掃描
+    // → START
+    // ==================================================
+
+    if (records.length === 0) {
+
+      await startProduction();
+
+    }
+
+    // ==================================================
+    // 已經有進行中的紀錄
+    //
+    // → 第二次掃描
+    // → FINISH
+    // ==================================================
+
+    else {
+
+      await finishProduction(
+        records[0]
+      );
+
+    }
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    showError(
+      error.message
     );
 
-    productSelect.addEventListener(
-      "change",
-      generateQRCode
+  }
+
+}
+
+
+// ==================================================
+// START
+// ==================================================
+
+async function startProduction() {
+
+  const now =
+    new Date().toISOString();
+
+
+  const response =
+    await fetch(
+
+      SUPABASE_URL +
+      "/rest/v1/production_records",
+
+      {
+
+        method: "POST",
+
+        headers: {
+
+          "Content-Type":
+            "application/json",
+
+          "apikey":
+            SUPABASE_KEY,
+
+          "Authorization":
+            "Bearer " + SUPABASE_KEY,
+
+          "Prefer":
+            "return=representation"
+
+        },
+
+        body: JSON.stringify({
+
+          group_code:
+            group,
+
+          product_code:
+            product,
+
+          station_code:
+            station,
+
+          start_time:
+            now,
+
+          finish_time:
+            null
+
+        })
+
+      }
+
     );
 
-    stationSelect.addEventListener(
-      "change",
-      generateQRCode
+
+  if (!response.ok) {
+
+    throw new Error(
+      "START 寫入失敗"
     );
 
-  </script>
+  }
+
+
+  // ==================================================
+  // 顯示 START
+  // ==================================================
+
+  statusElement.className =
+    "starting";
+
+  statusElement.textContent =
+    "✓ START";
+
+  messageElement.textContent =
+    "已開始生產";
+
+}
+
+
+// ==================================================
+// FINISH
+// ==================================================
+
+async function finishProduction(record) {
+
+  const now =
+    new Date().toISOString();
+
+
+  const updateUrl =
+    SUPABASE_URL +
+    "/rest/v1/production_records" +
+
+    "?id=eq." +
+    encodeURIComponent(record.id);
+
+
+  const response =
+    await fetch(
+
+      updateUrl,
+
+      {
+
+        method: "PATCH",
+
+        headers: {
+
+          "Content-Type":
+            "application/json",
+
+          "apikey":
+            SUPABASE_KEY,
+
+          "Authorization":
+            "Bearer " + SUPABASE_KEY,
+
+          "Prefer":
+            "return=representation"
+
+        },
+
+        body: JSON.stringify({
+
+          finish_time:
+            now
+
+        })
+
+      }
+
+    );
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      "FINISH 寫入失敗"
+    );
+
+  }
+
+
+  // ==================================================
+  // 顯示 FINISH
+  // ==================================================
+
+  statusElement.className =
+    "finishing";
+
+  statusElement.textContent =
+    "✓ FINISH";
+
+  messageElement.textContent =
+    "已完成生產";
+
+}
+
+
+// ==================================================
+// 錯誤
+// ==================================================
+
+function showError(message) {
+
+  statusElement.className =
+    "error";
+
+  statusElement.textContent =
+    "✕ ERROR";
+
+  messageElement.textContent =
+    message;
+
+}
+
+</script>
 
 </body>
+
 </html>
