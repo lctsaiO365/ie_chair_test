@@ -12,3 +12,6 @@ https://lctsaio365.github.io/ie_chair_test/
 
 dashboard Pages
 https://lctsaio365.github.io/ie_chair_test/dashboard.html
+
+shen_ver
+目前內嵌QRcode產生器，但連動資料庫的程式邏輯還沒通
