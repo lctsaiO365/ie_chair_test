@@ -2,10 +2,12 @@
 <html lang="zh-TW">
 
 <head>
+
   <meta charset="UTF-8">
 
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0">
 
   <title>IE WIP Dashboard</title>
 
@@ -14,55 +16,136 @@
 
   <style>
 
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
+      font-family:
+        Arial,
+        "Microsoft JhengHei",
+        sans-serif;
+
       max-width: 1100px;
       margin: 30px auto;
       padding: 20px;
+
+      background: #f5f6f8;
+      color: #222;
     }
 
     h1 {
       margin-bottom: 25px;
     }
 
+    /* =========================
+       控制區
+    ========================= */
+
     .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+
       margin-bottom: 20px;
     }
 
     select,
     button {
       font-size: 16px;
-      padding: 8px 12px;
-      margin-left: 5px;
+      padding: 9px 14px;
+
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    select {
+      background: white;
     }
 
     button {
+      background: #2563eb;
+      color: white;
+
+      border: none;
+
       cursor: pointer;
     }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    /* =========================
+       連線狀態
+    ========================= */
+
+    .status {
+      padding: 12px 15px;
+
+      border-radius: 8px;
+
+      margin-bottom: 20px;
+
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .status.loading {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status.success {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* =========================
+       KPI Cards
+    ========================= */
 
     .cards {
       display: flex;
       gap: 20px;
+
       margin: 25px 0;
     }
 
     .card {
       flex: 1;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
+
+      padding: 25px;
+
+      border: 1px solid #ddd;
+      border-radius: 12px;
+
       text-align: center;
-      background: #fafafa;
+
+      background: white;
+
+      box-shadow:
+        0 2px 8px
+        rgba(0, 0, 0, 0.05);
     }
 
     .card-title {
       font-size: 18px;
-      color: #555;
-      margin-bottom: 10px;
+
+      color: #666;
+
+      margin-bottom: 12px;
     }
 
     .value {
-      font-size: 36px;
+      font-size: 42px;
+
       font-weight: bold;
     }
 
@@ -74,23 +157,97 @@
       color: #16a34a;
     }
 
-    .status {
-      margin: 10px 0;
-      color: #666;
+    /* =========================
+       資料資訊
+    ========================= */
+
+    .info {
+      display: flex;
+
+      gap: 30px;
+
+      flex-wrap: wrap;
+
+      margin:
+        10px 0 25px;
+
+      color: #555;
     }
 
-    .chart-container {
-      margin-top: 30px;
+    /* =========================
+       Chart
+    ========================= */
+
+    .chart-box {
+      background: white;
+
+      border: 1px solid #ddd;
+
+      border-radius: 12px;
+
+      padding: 20px;
+
+      margin-top: 20px;
+    }
+
+    .chart-box h2 {
+      margin-top: 0;
     }
 
     canvas {
       margin-top: 20px;
     }
 
+    /* =========================
+       Debug
+    ========================= */
+
+    .debug-box {
+      margin-top: 25px;
+
+      padding: 15px;
+
+      background: #111827;
+
+      color: #d1d5db;
+
+      border-radius: 8px;
+
+      font-family:
+        Consolas,
+        Monaco,
+        monospace;
+
+      font-size: 13px;
+
+      white-space: pre-wrap;
+
+      word-break: break-word;
+
+      max-height: 300px;
+
+      overflow-y: auto;
+    }
+
+    /* =========================
+       Mobile
+    ========================= */
+
     @media (max-width: 700px) {
 
       .cards {
         flex-direction: column;
+      }
+
+      .controls {
+        flex-direction: column;
+
+        align-items: stretch;
+      }
+
+      select,
+      button {
+        width: 100%;
       }
 
     }
@@ -102,45 +259,62 @@
 
 <body>
 
-<h1>IE WIP Dashboard</h1>
+
+<!-- =====================================================
+     標題
+===================================================== -->
+
+<h1>
+  IE WIP Dashboard
+</h1>
 
 
-<!-- ==========================
+<!-- =====================================================
      Group 選擇
-========================== -->
+===================================================== -->
 
 <div class="controls">
 
-  Group：
+  <label for="groupSelect">
+    Group：
+  </label>
 
   <select id="groupSelect">
 
-    <option value="G01">G01</option>
-    <option value="G02">G02</option>
-    <option value="G03" selected>G03</option>
-    <option value="G04">G04</option>
-    <option value="G05">G05</option>
-    <option value="G06">G06</option>
-    <option value="G07">G07</option>
-    <option value="G08">G08</option>
-    <option value="G09">G09</option>
-    <option value="G10">G10</option>
-    <option value="G11">G11</option>
-    <option value="G12">G12</option>
+    <option value="ALL">
+      全部 Group
+    </option>
 
   </select>
 
 
-  <button onclick="loadData()">
+  <button
+    id="updateButton"
+    type="button">
+
     立即更新
+
   </button>
 
 </div>
 
 
-<!-- ==========================
-     KPI Cards
-========================== -->
+<!-- =====================================================
+     Supabase 連線狀態
+===================================================== -->
+
+<div
+  id="status"
+  class="status">
+
+  正在初始化...
+
+</div>
+
+
+<!-- =====================================================
+     KPI
+===================================================== -->
 
 <div class="cards">
 
@@ -154,8 +328,8 @@
     </div>
 
     <div
-      class="value material"
-      id="materialWIP">
+      id="materialWIP"
+      class="value material">
 
       -
 
@@ -173,8 +347,8 @@
     </div>
 
     <div
-      class="value product"
-      id="productWIP">
+      id="productWIP"
+      class="value product">
 
       -
 
@@ -186,42 +360,84 @@
 </div>
 
 
-<!-- ==========================
-     更新時間
-========================== -->
+<!-- =====================================================
+     資訊
+===================================================== -->
 
-<div class="status">
+<div class="info">
 
-  最後更新：
+  <div>
 
-  <span id="lastUpdate">
-    -
-  </span>
+    資料筆數：
+
+    <strong id="recordCount">
+      -
+    </strong>
+
+  </div>
+
+
+  <div>
+
+    Station 數：
+
+    <strong id="stationCount">
+      -
+    </strong>
+
+  </div>
+
+
+  <div>
+
+    最後更新：
+
+    <strong id="lastUpdate">
+      -
+    </strong>
+
+  </div>
 
 </div>
 
 
-<!-- ==========================
+<!-- =====================================================
      Station Chart
-========================== -->
+===================================================== -->
 
-<div class="chart-container">
+<div class="chart-box">
 
   <h2>
     各工作站 WIP
   </h2>
 
-  <canvas id="stationChart"></canvas>
+  <canvas
+    id="stationChart">
+  </canvas>
 
 </div>
+
+
+<!-- =====================================================
+     Debug
+===================================================== -->
+
+<div
+  id="debug"
+  class="debug-box">
+
+  等待 Supabase 資料...
+
+</div>
+
 
 
 <script>
 
 
-// ==========================================
-// Supabase 設定
-// ==========================================
+// =====================================================
+// 1. Supabase 設定
+// =====================================================
 
 const SUPABASE_URL =
   "https://iomsrjkrvuzrsluirtdj.supabase.co";
@@ -231,37 +447,134 @@ const SUPABASE_KEY =
   "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
 
 
+// =====================================================
+// 2. 全域變數
+// =====================================================
+
+let allBufferData = [];
+
 let stationChart = null;
 
 
-// ==========================================
-// 從 Supabase 讀取 Buffer
-// ==========================================
+// =====================================================
+// 3. Debug
+// =====================================================
+
+function showDebug(message) {
+
+  const debug =
+    document.getElementById("debug");
+
+  const time =
+    new Date()
+      .toLocaleTimeString();
+
+  debug.textContent =
+    "[" +
+    time +
+    "] " +
+    message;
+
+  console.log(message);
+
+}
+
+
+// =====================================================
+// 4. 顯示連線狀態
+// =====================================================
+
+function setStatus(
+  message,
+  type
+) {
+
+  const status =
+    document.getElementById("status");
+
+  status.textContent =
+    message;
+
+  status.className =
+    "status";
+
+  if (type) {
+
+    status.classList.add(type);
+
+  }
+
+}
+
+
+// =====================================================
+// 5. 從 Supabase 取得 buffer
+// =====================================================
 
 async function loadData() {
 
+
+  setStatus(
+    "正在連線 Supabase...",
+    "loading"
+  );
+
+
+  showDebug(
+    "開始讀取 public.buffer..."
+  );
+
+
+  // ---------------------------------------------------
+  // Supabase REST API
+  //
+  // 這裡先不加 group_id，
+  // 讓網頁完整取得 buffer，
+  // 再由 JavaScript 計算與篩選。
+  // ---------------------------------------------------
+
   const url =
     SUPABASE_URL +
-    "/rest/v1/buffer?select=*";
+    "/rest/v1/buffer" +
+    "?select=*";
 
-  console.log("查詢 URL：", url);
+
+  console.log(
+    "Supabase URL:",
+    url
+  );
+
 
   try {
 
+
+    // -------------------------------------------------
+    // 發送 Request
+    // -------------------------------------------------
+
     const response =
-      await fetch(url, {
+      await fetch(
+        url,
+        {
 
-        method: "GET",
+          method: "GET",
 
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization":
-            "Bearer " + SUPABASE_KEY,
-          "Content-Type":
-            "application/json"
+          headers: {
+
+            "apikey":
+              SUPABASE_KEY,
+
+            "Authorization":
+              "Bearer " +
+              SUPABASE_KEY,
+
+            "Content-Type":
+              "application/json"
+
+          }
+
         }
-
-      });
+      );
 
 
     console.log(
@@ -270,61 +583,912 @@ async function loadData() {
     );
 
 
-    const text =
+    // -------------------------------------------------
+    // 取得原始回應
+    // -------------------------------------------------
+
+    const responseText =
       await response.text();
 
 
     console.log(
-      "Supabase 回傳：",
-      text
+      "Supabase Response:",
+      responseText
     );
 
+
+    // -------------------------------------------------
+    // HTTP 錯誤
+    // -------------------------------------------------
 
     if (!response.ok) {
 
       throw new Error(
-        "Supabase API Error: " +
+
+        "HTTP " +
         response.status +
-        " / " +
-        text
+        "\n\n" +
+        responseText
+
       );
 
     }
 
 
-    const data =
-      JSON.parse(text);
+    // -------------------------------------------------
+    // 解析 JSON
+    // -------------------------------------------------
 
+    let data;
+
+    try {
+
+      data =
+        JSON.parse(
+          responseText
+        );
+
+    }
+
+    catch (error) {
+
+      throw new Error(
+
+        "Supabase 回傳資料不是 JSON：\n\n" +
+        responseText
+
+      );
+
+    }
+
+
+    // -------------------------------------------------
+    // 確認資料格式
+    // -------------------------------------------------
+
+    if (!Array.isArray(data)) {
+
+      throw new Error(
+        "Supabase 回傳格式不是 Array"
+      );
+
+    }
+
+
+    // -------------------------------------------------
+    // 儲存全部資料
+    // -------------------------------------------------
+
+    allBufferData =
+      data;
+
+
+    // -------------------------------------------------
+    // Console
+    // -------------------------------------------------
 
     console.log(
-      "Buffer 筆數：",
-      data.length
-    );
-
-
-    console.log(
-      "Buffer 資料：",
+      "buffer 資料：",
       data
     );
 
 
-  } catch (error) {
+    console.log(
+      "buffer 筆數：",
+      data.length
+    );
 
-    console.error(
-      "讀取 buffer 失敗：",
-      error
+
+    // -------------------------------------------------
+    // 建立 Group 下拉選單
+    // -------------------------------------------------
+
+    updateGroupSelect(
+      data
+    );
+
+
+    // -------------------------------------------------
+    // 依目前 Group 計算
+    // -------------------------------------------------
+
+    applyGroupFilter();
+
+
+    // -------------------------------------------------
+    // 成功
+    // -------------------------------------------------
+
+    setStatus(
+
+      "✓ Supabase 連線成功，已取得 buffer 資料",
+
+      "success"
+
+    );
+
+
+    // -------------------------------------------------
+    // Debug
+    // -------------------------------------------------
+
+    showDebug(
+
+      "Supabase 讀取成功\n\n" +
+
+      "Table：public.buffer\n" +
+
+      "資料筆數：" +
+      data.length +
+      "\n\n" +
+
+      "資料範例：\n" +
+
+      JSON.stringify(
+        data.slice(0, 5),
+        null,
+        2
+      )
+
     );
 
   }
 
+
+  catch (error) {
+
+
+    console.error(
+      "Supabase Error:",
+      error
+    );
+
+
+    setStatus(
+
+      "✗ Supabase 讀取失敗",
+
+      "error"
+
+    );
+
+
+    showDebug(
+
+      "Supabase 讀取失敗\n\n" +
+
+      error.message
+
+    );
+
+
+    // -------------------------------------------------
+    // 清除 KPI
+    // -------------------------------------------------
+
+    document
+      .getElementById(
+        "materialWIP"
+      )
+      .textContent =
+      "ERROR";
+
+
+    document
+      .getElementById(
+        "productWIP"
+      )
+      .textContent =
+      "ERROR";
+
+
+    document
+      .getElementById(
+        "recordCount"
+      )
+      .textContent =
+      "-";
+
+
+    document
+      .getElementById(
+        "stationCount"
+      )
+      .textContent =
+      "-";
+
+  }
+
 }
+
+
+
+// =====================================================
+// 6. 建立 Group 下拉選單
+// =====================================================
+
+function updateGroupSelect(data) {
+
+
+  const select =
+    document.getElementById(
+      "groupSelect"
+    );
+
+
+  // ---------------------------------------------------
+  // 記住目前選擇
+  // ---------------------------------------------------
+
+  const currentValue =
+    select.value;
+
+
+  // ---------------------------------------------------
+  // 取得所有 Group
+  // ---------------------------------------------------
+
+  const groups = [
+
+    ...new Set(
+
+      data
+        .map(
+          row =>
+            row.group_id
+        )
+        .filter(
+          value =>
+            value !== null &&
+            value !== undefined &&
+            value !== ""
+        )
+
+    )
+
+  ];
+
+
+  // ---------------------------------------------------
+  // 排序
+  // ---------------------------------------------------
+
+  groups.sort();
+
+
+  // ---------------------------------------------------
+  // 清空 Select
+  // ---------------------------------------------------
+
+  select.innerHTML = "";
+
+
+  // ---------------------------------------------------
+  // 全部
+  // ---------------------------------------------------
+
+  const allOption =
+    document.createElement(
+      "option"
+    );
+
+
+  allOption.value =
+    "ALL";
+
+
+  allOption.textContent =
+    "全部 Group";
+
+
+  select.appendChild(
+    allOption
+  );
+
+
+  // ---------------------------------------------------
+  // 建立 Group Option
+  // ---------------------------------------------------
+
+  groups.forEach(
+    group => {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        group;
+
+
+      option.textContent =
+        group;
+
+
+      select.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  // ---------------------------------------------------
+  // 恢復之前的選擇
+  // ---------------------------------------------------
+
+  if (
+    currentValue !== "ALL" &&
+    groups.includes(
+      currentValue
+    )
+  ) {
+
+    select.value =
+      currentValue;
+
+  }
+
+  else {
+
+    select.value =
+      "ALL";
+
+  }
+
+}
+
+
+
+// =====================================================
+// 7. Group 篩選
+// =====================================================
+
+function applyGroupFilter() {
+
+
+  const selectedGroup =
+    document
+      .getElementById(
+        "groupSelect"
+      )
+      .value;
+
+
+  let filteredData;
+
+
+  // ---------------------------------------------------
+  // 全部
+  // ---------------------------------------------------
+
+  if (
+    selectedGroup === "ALL"
+  ) {
+
+    filteredData =
+      allBufferData;
+
+  }
+
+
+  // ---------------------------------------------------
+  // 指定 Group
+  // ---------------------------------------------------
+
+  else {
+
+    filteredData =
+      allBufferData.filter(
+
+        row =>
+
+          String(
+            row.group_id
+          ) ===
+          String(
+            selectedGroup
+          )
+
+      );
+
+  }
+
+
+  console.log(
+    "目前 Group:",
+    selectedGroup
+  );
+
+
+  console.log(
+    "篩選後資料:",
+    filteredData
+  );
+
+
+  // ---------------------------------------------------
+  // 計算 KPI
+  // ---------------------------------------------------
+
+  calculateKPI(
+    filteredData
+  );
+
+
+  // ---------------------------------------------------
+  // 畫圖
+  // ---------------------------------------------------
+
+  drawStationChart(
+    filteredData
+  );
+
+}
+
+
+
+// =====================================================
+// 8. 計算 Material / Product WIP
+// =====================================================
+
+function calculateKPI(data) {
+
+
+  // ---------------------------------------------------
+  // Material WIP
+  //
+  // 只計算 material_buffer
+  // ---------------------------------------------------
+
+  const materialWIP =
+    data.reduce(
+
+      (
+        total,
+        row
+      ) => {
+
+        const value =
+          Number(
+            row.material_buffer
+          ) || 0;
+
+
+        return (
+          total +
+          value
+        );
+
+      },
+
+      0
+
+    );
+
+
+  // ---------------------------------------------------
+  // Product WIP
+  //
+  // 只計算 product_buffer
+  // ---------------------------------------------------
+
+  const productWIP =
+    data.reduce(
+
+      (
+        total,
+        row
+      ) => {
+
+        const value =
+          Number(
+            row.product_buffer
+          ) || 0;
+
+
+        return (
+          total +
+          value
+        );
+
+      },
+
+      0
+
+    );
+
+
+  // ---------------------------------------------------
+  // Material WIP 顯示
+  // ---------------------------------------------------
+
+  document
+    .getElementById(
+      "materialWIP"
+    )
+    .textContent =
+    materialWIP.toLocaleString();
+
+
+  // ---------------------------------------------------
+  // Product WIP 顯示
+  // ---------------------------------------------------
+
+  document
+    .getElementById(
+      "productWIP"
+    )
+    .textContent =
+    productWIP.toLocaleString();
+
+
+  // ---------------------------------------------------
+  // 資料筆數
+  // ---------------------------------------------------
+
+  document
+    .getElementById(
+      "recordCount"
+    )
+    .textContent =
+    data.length.toLocaleString();
+
+
+  // ---------------------------------------------------
+  // Station 數
+  // ---------------------------------------------------
+
+  const stations = [
+
+    ...new Set(
+
+      data
+        .map(
+          row =>
+            row.station_id
+        )
+        .filter(
+          value =>
+            value !== null &&
+            value !== undefined &&
+            value !== ""
+        )
+
+    )
+
+  ];
+
+
+  document
+    .getElementById(
+      "stationCount"
+    )
+    .textContent =
+    stations.length;
+
+
+  // ---------------------------------------------------
+  // 更新時間
+  // ---------------------------------------------------
+
+  document
+    .getElementById(
+      "lastUpdate"
+    )
+    .textContent =
+    new Date()
+      .toLocaleTimeString();
+
+}
+
+
+
+// =====================================================
+// 9. Station Chart
+// =====================================================
+
+function drawStationChart(data) {
+
+
+  // ---------------------------------------------------
+  // 建立 Station Object
+  // ---------------------------------------------------
+
+  const stationData = {};
+
+
+  data.forEach(
+    row => {
+
+
+      const station =
+        row.station_id ||
+        "Unknown";
+
+
+      const material =
+        Number(
+          row.material_buffer
+        ) || 0;
+
+
+      const product =
+        Number(
+          row.product_buffer
+        ) || 0;
+
+
+      // ------------------------------------------------
+      // 建立 Station
+      // ------------------------------------------------
+
+      if (
+        !stationData[station]
+      ) {
+
+        stationData[station] = {
+
+          material: 0,
+
+          product: 0
+
+        };
+
+      }
+
+
+      // ------------------------------------------------
+      // Material
+      // ------------------------------------------------
+
+      stationData[
+        station
+      ].material +=
+        material;
+
+
+      // ------------------------------------------------
+      // Product
+      // ------------------------------------------------
+
+      stationData[
+        station
+      ].product +=
+        product;
+
+    }
+  );
+
+
+  // ---------------------------------------------------
+  // Station 排序
+  // ---------------------------------------------------
+
+  const stations =
+    Object.keys(
+      stationData
+    ).sort();
+
+
+  // ---------------------------------------------------
+  // Material Array
+  // ---------------------------------------------------
+
+  const materialValues =
+    stations.map(
+
+      station =>
+
+        stationData[
+          station
+        ].material
+
+    );
+
+
+  // ---------------------------------------------------
+  // Product Array
+  // ---------------------------------------------------
+
+  const productValues =
+    stations.map(
+
+      station =>
+
+        stationData[
+          station
+        ].product
+
+    );
+
+
+  // ---------------------------------------------------
+  // 刪除舊 Chart
+  // ---------------------------------------------------
+
+  if (
+    stationChart
+  ) {
+
+    stationChart.destroy();
+
+  }
+
+
+  // ---------------------------------------------------
+  // Canvas
+  // ---------------------------------------------------
+
+  const ctx =
+    document
+      .getElementById(
+        "stationChart"
+      );
+
+
+  // ---------------------------------------------------
+  // 建立 Chart
+  // ---------------------------------------------------
+
+  stationChart =
+    new Chart(
+
+      ctx,
+
+      {
+
+        type:
+          "bar",
+
+
+        data: {
+
+          labels:
+            stations,
+
+
+          datasets: [
+
+            {
+
+              label:
+                "Material WIP",
+
+              data:
+                materialValues,
+
+              backgroundColor:
+                "#2563eb"
+
+            },
+
+
+            {
+
+              label:
+                "Product WIP",
+
+              data:
+                productValues,
+
+              backgroundColor:
+                "#16a34a"
+
+            }
+
+          ]
+
+        },
+
+
+        options: {
+
+          responsive:
+            true,
+
+
+          plugins: {
+
+            legend: {
+
+              position:
+                "top"
+
+            }
+
+          },
+
+
+          scales: {
+
+            x: {
+
+              title: {
+
+                display:
+                  true,
+
+                text:
+                  "Station"
+
+              }
+
+            },
+
+
+            y: {
+
+              beginAtZero:
+                true,
+
+              title: {
+
+                display:
+                  true,
+
+                text:
+                  "WIP"
+
+              }
+
+            }
+
+          }
+
+        }
+
+      }
+
+    );
+
+}
+
+
+
+// =====================================================
+// 10. Group 改變
+// =====================================================
+
+document
+  .getElementById(
+    "groupSelect"
+  )
+  .addEventListener(
+    "change",
+    applyGroupFilter
+  );
+
+
+
+// =====================================================
+// 11. 更新按鈕
+// =====================================================
+
+document
+  .getElementById(
+    "updateButton"
+  )
+  .addEventListener(
+    "click",
+    loadData
+  );
+
+
+
+// =====================================================
+// 12. 第一次載入
+// =====================================================
+
 loadData();
 
 
 
-// ==========================================
-// 每 10 秒自動更新
-// ==========================================
+// =====================================================
+// 13. 每 10 秒自動更新
+// =====================================================
 
 setInterval(
 
@@ -336,6 +1500,7 @@ setInterval(
 
 
 </script>
+
 
 </body>
 
