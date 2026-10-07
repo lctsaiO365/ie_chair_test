@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 
 <head>
+
   <meta charset="UTF-8">
 
   <meta name="viewport"
@@ -9,7 +10,6 @@
 
   <title>IE WIP Dashboard</title>
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -74,6 +74,10 @@
       color: #16a34a;
     }
 
+    .cycle {
+      color: #dc2626;
+    }
+
     .status {
       margin: 10px 0;
       color: #666;
@@ -81,6 +85,10 @@
 
     .chart-container {
       margin-top: 30px;
+    }
+
+    .chart-box {
+      margin-top: 40px;
     }
 
     canvas {
@@ -183,6 +191,24 @@
   </div>
 
 
+  <!-- Average Cycle Time -->
+
+  <div class="card">
+
+    <div class="card-title">
+      Average Cycle Time
+    </div>
+
+    <div
+      class="value cycle"
+      id="cycleTime">
+
+      -
+
+    </div>
+
+  </div>
+
 </div>
 
 
@@ -202,7 +228,7 @@
 
 
 <!-- ==========================
-     Station Chart
+     Station WIP Chart
 ========================== -->
 
 <div class="chart-container">
@@ -212,6 +238,21 @@
   </h2>
 
   <canvas id="stationChart"></canvas>
+
+</div>
+
+
+<!-- ==========================
+     Station Cycle Time
+========================== -->
+
+<div class="chart-container chart-box">
+
+  <h2>
+    各工作站 Cycle Time
+  </h2>
+
+  <canvas id="cycleTimeChart"></canvas>
 
 </div>
 
@@ -233,15 +274,15 @@ const SUPABASE_KEY =
 
 let stationChart = null;
 
+let cycleTimeChart = null;
+
 
 // ==========================================
-// 從 Supabase 讀取 Buffer
+// 載入所有資料
 // ==========================================
 
 async function loadData() {
 
-
-  // 取得目前選擇的 Group
 
   const group =
     document
@@ -249,77 +290,59 @@ async function loadData() {
       .value;
 
 
-  // ========================================
-  // Supabase REST API
-  // ========================================
-
-  const url =
-    SUPABASE_URL +
-    "/rest/v1/buffer" +
-    "?select=*" +
-    "&group_id=eq." +
-    encodeURIComponent(group);
-
-
   try {
 
 
     // ======================================
-    // 呼叫 Supabase
+    // 同時讀取 Buffer + Events
     // ======================================
 
-    const response =
-      await fetch(
-        url,
-        {
-
-          headers: {
-
-            "apikey":
-              SUPABASE_KEY,
-
-            "Authorization":
-              "Bearer " +
-              SUPABASE_KEY
-
-          }
-
-        }
-      );
+    const bufferData =
+      await loadBufferData(group);
 
 
-    if (!response.ok) {
-
-      throw new Error(
-        "Supabase 讀取失敗：" +
-        response.status
-      );
-
-    }
-
-
-    const data =
-      await response.json();
+    const eventData =
+      await loadEventData(group);
 
 
     console.log(
       "Buffer data:",
-      data
+      bufferData
+    );
+
+
+    console.log(
+      "Event data:",
+      eventData
     );
 
 
     // ======================================
-    // 網頁端計算 KPI
+    // WIP KPI
     // ======================================
 
-    calculateKPI(data);
+    calculateKPI(bufferData);
 
 
     // ======================================
-    // 畫 Station Chart
+    // Station WIP
     // ======================================
 
-    drawChart(data);
+    drawStationChart(bufferData);
+
+
+    // ======================================
+    // Average Cycle Time
+    // ======================================
+
+    calculateCycleTime(eventData);
+
+
+    // ======================================
+    // Station Cycle Time
+    // ======================================
+
+    drawCycleTimeChart(eventData);
 
 
     // ======================================
@@ -332,12 +355,10 @@ async function loadData() {
       new Date()
         .toLocaleTimeString();
 
-
   }
 
 
   catch (error) {
-
 
     console.error(error);
 
@@ -353,22 +374,130 @@ async function loadData() {
       .textContent =
       "ERROR";
 
+
+    document
+      .getElementById("cycleTime")
+      .textContent =
+      "ERROR";
+
   }
 
 }
 
 
+// ==========================================
+// 讀取 Buffer
+// ==========================================
+
+async function loadBufferData(group) {
+
+
+  const url =
+    SUPABASE_URL +
+    "/rest/v1/buffer" +
+    "?select=*" +
+    "&group_id=eq." +
+    encodeURIComponent(group);
+
+
+  const response =
+    await fetch(
+
+      url,
+
+      {
+
+        headers: {
+
+          "apikey":
+            SUPABASE_KEY,
+
+          "Authorization":
+            "Bearer " +
+            SUPABASE_KEY
+
+        }
+
+      }
+
+    );
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      "Buffer 讀取失敗：" +
+      response.status
+    );
+
+  }
+
+
+  return await response.json();
+
+}
+
 
 // ==========================================
-// 計算 Material / Product WIP
+// 讀取 Events
+// ==========================================
+
+async function loadEventData(group) {
+
+
+  const url =
+    SUPABASE_URL +
+    "/rest/v1/events" +
+    "?select=*" +
+    "&group_id=eq." +
+    encodeURIComponent(group) +
+    "&status=eq.COMPLETED";
+
+
+  const response =
+    await fetch(
+
+      url,
+
+      {
+
+        headers: {
+
+          "apikey":
+            SUPABASE_KEY,
+
+          "Authorization":
+            "Bearer " +
+            SUPABASE_KEY
+
+        }
+
+      }
+
+    );
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      "Events 讀取失敗：" +
+      response.status
+    );
+
+  }
+
+
+  return await response.json();
+
+}
+
+
+// ==========================================
+// Material / Product WIP
 // ==========================================
 
 function calculateKPI(data) {
 
-
-  // ========================================
-  // Material WIP
-  // ========================================
 
   const materialWIP =
     data.reduce(
@@ -385,10 +514,6 @@ function calculateKPI(data) {
     );
 
 
-  // ========================================
-  // Product WIP
-  // ========================================
-
   const productWIP =
     data.reduce(
 
@@ -404,10 +529,6 @@ function calculateKPI(data) {
     );
 
 
-  // ========================================
-  // 顯示
-  // ========================================
-
   document
     .getElementById("materialWIP")
     .textContent =
@@ -422,17 +543,12 @@ function calculateKPI(data) {
 }
 
 
-
 // ==========================================
 // Station WIP Chart
 // ==========================================
 
-function drawChart(data) {
+function drawStationChart(data) {
 
-
-  // ========================================
-  // 建立 Station 資料
-  // ========================================
 
   const stationData = {};
 
@@ -456,8 +572,6 @@ function drawChart(data) {
       );
 
 
-    // 如果 Station 尚未建立
-
     if (!stationData[station]) {
 
       stationData[station] = {
@@ -471,13 +585,9 @@ function drawChart(data) {
     }
 
 
-    // Material
-
     stationData[station].material +=
       material;
 
-
-    // Product
 
     stationData[station].product +=
       product;
@@ -485,20 +595,10 @@ function drawChart(data) {
   });
 
 
-
-  // ========================================
-  // Station 排序
-  // ========================================
-
   const stations =
     Object.keys(stationData)
       .sort();
 
-
-
-  // ========================================
-  // Material 數據
-  // ========================================
 
   const materialValues =
     stations.map(
@@ -509,11 +609,6 @@ function drawChart(data) {
     );
 
 
-
-  // ========================================
-  // Product 數據
-  // ========================================
-
   const productValues =
     stations.map(
 
@@ -523,23 +618,12 @@ function drawChart(data) {
     );
 
 
-
-  // ========================================
-  // 如果之前有 Chart
-  // 先刪掉
-  // ========================================
-
   if (stationChart) {
 
     stationChart.destroy();
 
   }
 
-
-
-  // ========================================
-  // 建立 Chart
-  // ========================================
 
   const ctx =
     document
@@ -557,12 +641,10 @@ function drawChart(data) {
 
         type: "bar",
 
-
         data: {
 
           labels:
             stations,
-
 
           datasets: [
 
@@ -578,7 +660,6 @@ function drawChart(data) {
                 "#2563eb"
 
             },
-
 
             {
 
@@ -597,11 +678,9 @@ function drawChart(data) {
 
         },
 
-
         options: {
 
           responsive: true,
-
 
           scales: {
 
@@ -630,6 +709,239 @@ function drawChart(data) {
 }
 
 
+// ==========================================
+// Average Cycle Time
+// ==========================================
+
+function calculateCycleTime(data) {
+
+
+  if (!data.length) {
+
+    document
+      .getElementById("cycleTime")
+      .textContent =
+      "-";
+
+    return;
+
+  }
+
+
+  const validData =
+    data.filter(
+
+      row =>
+        Number(row.duration_sec) > 0
+
+    );
+
+
+  if (!validData.length) {
+
+    document
+      .getElementById("cycleTime")
+      .textContent =
+      "-";
+
+    return;
+
+  }
+
+
+  const totalSeconds =
+    validData.reduce(
+
+      (sum, row) =>
+
+        sum +
+        Number(
+          row.duration_sec
+        ),
+
+      0
+
+    );
+
+
+  const averageSeconds =
+    totalSeconds /
+    validData.length;
+
+
+  const averageMinutes =
+    averageSeconds / 60;
+
+
+  document
+    .getElementById("cycleTime")
+    .textContent =
+    averageMinutes.toFixed(1) +
+    " min";
+
+}
+
+
+// ==========================================
+// Station Cycle Time Chart
+// ==========================================
+
+function drawCycleTimeChart(data) {
+
+
+  const stationData = {};
+
+
+  data.forEach(row => {
+
+
+    const station =
+      row.station_id;
+
+
+    const duration =
+      Number(
+        row.duration_sec
+      );
+
+
+    if (
+      !station ||
+      !Number.isFinite(duration) ||
+      duration <= 0
+    ) {
+
+      return;
+
+    }
+
+
+    if (!stationData[station]) {
+
+      stationData[station] = {
+
+        total: 0,
+
+        count: 0
+
+      };
+
+    }
+
+
+    stationData[station].total +=
+      duration;
+
+
+    stationData[station].count +=
+      1;
+
+  });
+
+
+  const stations =
+    Object.keys(stationData)
+      .sort();
+
+
+  const cycleTimeValues =
+    stations.map(
+
+      station => {
+
+        const averageSeconds =
+          stationData[station].total /
+          stationData[station].count;
+
+
+        return Number(
+          (
+            averageSeconds / 60
+          ).toFixed(1)
+        );
+
+      }
+
+    );
+
+
+  if (cycleTimeChart) {
+
+    cycleTimeChart.destroy();
+
+  }
+
+
+  const ctx =
+    document
+      .getElementById(
+        "cycleTimeChart"
+      );
+
+
+  cycleTimeChart =
+    new Chart(
+
+      ctx,
+
+      {
+
+        type: "bar",
+
+        data: {
+
+          labels:
+            stations,
+
+          datasets: [
+
+            {
+
+              label:
+                "Average Cycle Time (min)",
+
+              data:
+                cycleTimeValues,
+
+              backgroundColor:
+                "#dc2626"
+
+            }
+
+          ]
+
+        },
+
+        options: {
+
+          responsive: true,
+
+          scales: {
+
+            y: {
+
+              beginAtZero: true,
+
+              title: {
+
+                display: true,
+
+                text: "Minutes"
+
+              }
+
+            }
+
+          }
+
+        }
+
+      }
+
+    );
+
+}
+
 
 // ==========================================
 // Group 改變
@@ -645,13 +957,11 @@ document
   );
 
 
-
 // ==========================================
-// 第一次開啟網頁
+// 第一次開啟
 // ==========================================
 
 loadData();
-
 
 
 // ==========================================
@@ -665,7 +975,6 @@ setInterval(
   10000
 
 );
-
 
 </script>
 
