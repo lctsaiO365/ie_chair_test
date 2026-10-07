@@ -13,5 +13,13 @@ https://lctsaio365.github.io/ie_chair_test/
 dashboard Pages
 https://lctsaio365.github.io/ie_chair_test/dashboard.html
 
-WIP、cycle time
-https://lctsaio365.github.io/ie_chair_test/KPI.html
+=================================================================
+
+ IE Chair 工站 QR Code 產生器
+https://lctsaio365.github.io/ie_chair_test/qrcode.html
+
+IE Chair 工站同步計時器
+https://lctsaio365.github.io/ie_chair_test/timer.html
+
+IE Chair 組裝線即時監控中心
+https://lctsaio365.github.io/ie_chair_test/工概螢幕.html
