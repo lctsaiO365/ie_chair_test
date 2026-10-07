@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>IE Chair - 工站即時同步計時器</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0; padding: 14px;
+      background: #f1f5f9; color: #1e293b;
+    }
+    .card {
+      background: #fff; border-radius: 14px;
+      padding: 16px; margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .header-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .badge {
+      background: #e2e8f0; color: #334155;
+      padding: 5px 12px; border-radius: 6px;
+      font-weight: bold; font-size: 16px;
+    }
+    .flow-badge {
+      font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.4;
+    }
+    
+    .sync-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: bold; color: #065f46;
+      background: #ecfdf5; border: 1px solid #a7f3d0;
+      padding: 3px 8px; border-radius: 12px;
+    }
+    .pulse-dot {
+      width: 8px; height: 8px; background-color: #10b981;
+      border-radius: 50%; display: inline-block;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 1; }
+      50% { transform: scale(1.3); opacity: 0.6; }
+      100% { transform: scale(0.95); opacity: 1; }
+    }
+
+    .switch-link {
+      font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 600;
+    }
+    
+    /* 齊套狀態卡 (BOM Kitting Status) */
+    .feeder-card {
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 10px; padding: 12px; margin-top: 10px;
+    }
+    .feeder-title {
+      font-size: 13px; font-weight: bold; color: #334155;
+      margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .feeder-chips-container {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .feeder-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;
+    }
+    .chip-ok {
+      background: #dcfce7; color: #166534; border: 1px solid #86efac;
+    }
+    .chip-empty {
+      background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;
+    }
+
+    /* 站前/站後 庫存卡片 */
+    .wip-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .wip-box {
+      text-align: center; border-radius: 12px; padding: 12px 8px;
+    }
+    .wip-in { background: #eef2ff; border: 1px solid #c7d2fe; }
+    .wip-out { background: #ecfdf5; border: 1px solid #a7f3d0; }
+    
+    .wip-title {
+      font-size: 13px; font-weight: bold; margin-bottom: 4px;
+    }
+    .wip-subtitle {
+      font-size: 11px; margin-bottom: 6px;
+    }
+    .wip-in .wip-title { color: #4338ca; }
+    .wip-in .wip-subtitle { color: #6366f1; }
+    .wip-out .wip-title { color: #065f46; }
+    .wip-out .wip-subtitle { color: #059669; }
+
+    .wip-counter {
+      display: flex; justify-content: center; align-items: center; gap: 8px;
+    }
+    .wip-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: none; font-size: 20px; font-weight: bold;
+      color: white; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      touch-action: manipulation;
+    }
+    .wip-btn:active { transform: scale(0.92); }
+    .btn-in { background: #4f46e5; }
+    .btn-out { background: #059669; }
+
+    .wip-val {
+      font-size: 30px; font-weight: 800; min-width: 40px; color: #0f172a;
+    }
+
+    .init-hint {
+      font-size: 11px; color: #4338ca; background: #e0e7ff;
+      padding: 4px 8px; border-radius: 6px; margin-top: 8px; text-align: center;
+    }
+
+    /* 計時與控制 */
+    .timer-display {
+      font-family: monospace; font-size: 46px; font-weight: bold;
+      text-align: center; margin: 15px 0; color: #0f172a;
+    }
+    .main-btn {
+      width: 100%; padding: 18px; border: none; border-radius: 12px;
+      font-size: 18px; font-weight: bold; color: white;
+      cursor: pointer; touch-action: manipulation; transition: all 0.2s;
+    }
+    .btn-start { background: #10b981; }
+    .btn-start:active { background: #059669; }
+    .btn-finish { background: #ef4444 !important; cursor: pointer !important; opacity: 1 !important; }
+    .btn-finish:active { background: #dc2626 !important; }
+    
+    .btn-disabled {
+      background: #94a3b8 !important;
+      color: #f1f5f9 !important;
+      cursor: not-allowed !important;
+    }
+
+    .input-field {
+      width: 100%; padding: 10px; font-size: 16px;
+      border: 1px solid #cbd5e1; border-radius: 8px; margin-top: 4px;
+    }
+    #msg {
+      text-align: center; font-size: 14px; font-weight: bold; margin-top: 10px;
+      line-height: 1.4;
+    }
+
+    /* 歷史清單 */
+    .history-title {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 14px; font-weight: bold; color: #475569; margin-bottom: 8px;
+    }
+    .history-list {
+      max-height: 160px; overflow-y: auto; font-size: 13px;
+    }
+    .history-item {
+      display: flex; justify-content: space-between; padding: 7px 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 工站資訊 -->
+  <div class="card">
+    <div class="header-bar">
+      <div>
+        <span class="badge" id="groupBadge">--</span>
+        <span class="badge" id="stationBadge">--</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span class="sync-status"><span class="pulse-dot"></span>即時同步中</span>
+        <a href="qrcode.html" class="switch-link">更換 ❯</a>
+      </div>
+    </div>
+    <!-- 🏷️ 生產料號 -->
+    <div style="margin-top:10px; padding:10px 14px; background:#eff6ff; border-radius:10px; border:1px solid #bfdbfe; display:flex; align-items:center; justify-content:space-between;">
+      <span style="font-size:14px; font-weight:bold; color:#1e40af;">🏷️ 生產料號 (Part No.)：</span>
+      <span id="partNoDisplay" style="font-size:16px; font-weight:800; color:#1d4ed8;">載入中...</span>
+    </div>
+    <!-- 前後工站流向清楚標籤 -->
+    <div class="flow-info-box" style="margin-top:8px; padding:10px 12px; background:#f8fafc; border-radius:10px; border:1px solid #e2e8f0; font-size:13px; line-height:1.6;">
+      <div><span style="font-weight:bold; color:#475569;">📥 前置來源站：</span><span id="feederStationListText" style="color:#2563eb; font-weight:bold;">確認中...</span></div>
+      <div><span style="font-weight:bold; color:#475569;">📤 完工送往：</span><span id="nextStationText" style="color:#059669; font-weight:bold;">確認中...</span></div>
+    </div>
+  </div>
+
+  <!-- 站前與站後 WIP 看板 -->
+  <div class="card">
+    <div class="wip-grid">
+      <!-- 站前可用/備料 -->
+      <div class="wip-box wip-in">
+        <div class="wip-title">📥 站前可用量</div>
+        <div class="wip-subtitle" id="inSubtitle">齊套可組裝數</div>
+        <div class="wip-counter">
+          <button class="wip-btn btn-in" id="btnMinusIn">-</button>
+          <span class="wip-val" id="wipInText">0</span>
+          <button class="wip-btn btn-in" id="btnPlusIn">+</button>
+        </div>
+      </div>
+      <!-- 站後已完成（真實計時產出，不可手動預設） -->
+      <div class="wip-box wip-out">
+        <div class="wip-title">📤 站後已完成</div>
+        <div class="wip-subtitle">累計完工件數 (真實產出)</div>
+        <div class="wip-counter" style="justify-content:center; min-height:40px;">
+          <span class="wip-val" id="wipOutText" style="font-size:36px; color:#059669;">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 匯流工站齊套狀態卡 (若有前置站點則呈現各零件狀態) -->
+    <div id="feederStatusCard" class="feeder-card" style="display:none;">
+      <div class="feeder-title">
+        <span>🧩 前置零件庫存狀態（各需 1 件）：</span>
+        <span id="kitSummaryBadge" style="font-size:12px; font-weight:bold;"></span>
+      </div>
+      <div id="feederChips" class="feeder-chips-container">
+        <!-- 動態渲染各站狀態 -->
+      </div>
+    </div>
+
+    <div class="init-hint" id="manualHintText">
+      💡 提示：若現場有預發初始備料，可點擊 [+] 增加備用套數。
+    </div>
+  </div>
+
+  <!-- 計時器與主操作 -->
+  <div class="card">
+    <div class="timer-display" id="timerDisplay">00:00.0</div>
+    <button class="main-btn btn-disabled" id="mainActionBtn" disabled>
+      載入中...
+    </button>
+    <div id="msg">連線中...</div>
+  </div>
+
+  <!-- 本站生產紀錄 -->
+  <div class="card">
+    <div class="history-title">
+      <span>📋 本工站作業紀錄</span>
+      <span style="font-size:12px; color:#64748b;" id="cycleTotalBadge">累計完成：0 件</span>
+    </div>
+    <div class="history-list" id="historyList">
+      <div style="text-align:center; color:#94a3b8; padding: 10px;">尚未開始作業</div>
+    </div>
+  </div>
+
+<script>
+const SUPABASE_URL = "https://fqbsrcbxtmagczykoesv.supabase.co";
+const SUPABASE_KEY = "sb_publishable_mn0CAB_nkrDycq6DS3Q2_g_-80SlWHB";
+
+const urlParams = new URLSearchParams(window.location.search);
+const groupId = (urlParams.get("group") || "G01").trim();
+const stationId = (urlParams.get("station") || "ST01").trim();
+
+// 🏷️ 取得生產料號：優先從 URL 參數 (?part=) 取得，若無則自動自本機快存 (localStorage) 讀取該組別與工站料號
+let partNo = (urlParams.get("part") || "").trim();
+if (!partNo) {
+  try {
+    const allGroupParts = JSON.parse(localStorage.getItem("ie_chair_group_station_parts") || "{}");
+    const groupParts = allGroupParts[groupId] || {};
+    const flatParts = JSON.parse(localStorage.getItem("ie_chair_station_parts") || "{}");
+    partNo = (groupParts[stationId] || flatParts[stationId] || localStorage.getItem("ie_chair_locked_part_no") || "").trim();
+  } catch (e) {}
+}
+
+document.getElementById("groupBadge").textContent = groupId;
+document.getElementById("stationBadge").textContent = stationId;
+
+const partDisplayEl = document.getElementById("partNoDisplay");
+if (partNo) {
+  partDisplayEl.textContent = partNo;
+  partDisplayEl.style.color = "#1d4ed8";
+  try { localStorage.setItem("ie_chair_locked_part_no", partNo); } catch(e) {}
+} else {
+  partDisplayEl.textContent = "未指定料號";
+  partDisplayEl.style.color = "#94a3b8";
+}
+
+// 自動以完工數產生序號 (如 P01, P02, P03...)，無需人工輸入
+function getCurProductCode() {
+  return `P${String(currentOutWip + 1).padStart(2, '0')}`;
+}
+
+let isRootStation = false;     // 是否為起點工站 (前無工作站)
+let feederStations = [];       // 前置工站清單 (如 ST02, ST04, ST06, ST07, ST08)
+let nextStationId = null;      // 下一站代號
+
+let manualBufferWip = 0;       // 作業員手動設定的額外備料套數 (input_wip)
+let currentOutWip = 0;         // 站後累計完工數 (output_wip)
+let wipRecordId = null;
+
+let feederDetails = [];        // 前置站庫存詳情 [{ station, avail, ok }]
+let kitCount = 0;              // 當前可齊套組裝數
+
+let isWorking = false;
+let startTime = null;
+let timerInterval = null;
+
+// 初始化
+async function init() {
+  showMsg("同步全產線物料關係...", "#64748b");
+  try {
+    await updateFlowInfo();
+    await fetchWipData();
+    await computeKitting();
+    showMsg("就緒，隨時可開始作業", "#10b981");
+
+    setInterval(autoSyncLive, 2000);
+  } catch (err) {
+    showMsg("初始化失敗：" + err.message, "#ef4444");
+  }
+}
+
+// 取得工站拓撲關係
+async function updateFlowInfo() {
+  const flowRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/station_flow?group_id=eq.${groupId}&select=*`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
+  );
+  const flowData = await flowRes.json();
+
+  feederStations = flowData
+    .filter(f => (f.next_station_id || "").trim() === stationId)
+    .map(f => f.station_id.trim());
+
+  const myFlow = flowData.find(f => (f.station_id || "").trim() === stationId);
+  nextStationId = myFlow && myFlow.next_station_id ? myFlow.next_station_id.trim() : null;
+
+  const feederTextEl = document.getElementById("feederStationListText");
+  const nextTextEl = document.getElementById("nextStationText");
+
+  if (feederStations.length === 0) {
+    isRootStation = true;
+    feederTextEl.textContent = "🟢 起點第一站（無前置工站，原料自由取用）";
+    feederTextEl.style.color = "#16a34a";
+    document.getElementById("feederStatusCard").style.display = "none";
+    document.getElementById("inSubtitle").textContent = "現場零件庫存";
+  } else {
+    isRootStation = false;
+    feederTextEl.textContent = `${feederStations.join(" + ")} (共 ${feederStations.length} 站)`;
+    feederTextEl.style.color = "#2563eb";
+    document.getElementById("feederStatusCard").style.display = "block";
+    document.getElementById("inSubtitle").textContent = "可齊套組裝數";
+  }
+
+  if (nextStationId) {
+    nextTextEl.textContent = `➡️ ${nextStationId}`;
+    nextTextEl.style.color = "#059669";
+  } else {
+    nextTextEl.textContent = "🏁 產線終點（組裝完成）";
+    nextTextEl.style.color = "#7c3aed";
+  }
+}
+
+// 讀取本站自己的 station_wip 紀錄
+async function fetchWipData() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${groupId}&station_id=eq.${stationId}&select=*`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
+  );
+  const data = await res.json();
+  if (data.length > 0) {
+    wipRecordId = data[0].id;
+    manualBufferWip = data[0].input_wip || 0;
+    currentOutWip = data[0].output_wip || 0;
+  } else {
+    const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/station_wip`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json", Prefer: "return=representation"
+      },
+      body: JSON.stringify({ group_id: groupId, station_id: stationId, input_wip: 0, output_wip: 0 })
+    });
+    const created = await insertRes.json();
+    wipRecordId = created[0].id;
+    manualBufferWip = 0;
+    currentOutWip = 0;
+  }
+}
+
+// 🌟 核心計算：齊套約束（BOM 1:1）計算
+async function computeKitting() {
+  if (isRootStation || feederStations.length === 0) {
+    kitCount = manualBufferWip;
+    refreshUiNumbers();
+    return;
+  }
+
+  // 抓取全組 station_wip
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${groupId}&select=*`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
+  );
+  const allWips = await res.json();
+  const wipMap = {};
+  allWips.forEach(w => {
+    wipMap[(w.station_id || "").trim()] = w;
+  });
+
+  // 本站累計已消耗量 = 本站已完成數 + (若正在作業中則已取走1套)
+  const consumed = currentOutWip + (isWorking ? 1 : 0);
+
+  feederDetails = [];
+  let minAvail = 999999;
+
+  feederStations.forEach(fSt => {
+    const fWip = wipMap[fSt] || { output_wip: 0 };
+    const fTotalOut = fWip.output_wip || 0;
+    // 前站總產出 - 本站已消耗量 + 本站手動額外備料
+    const avail = Math.max(0, fTotalOut - consumed + manualBufferWip);
+    feederDetails.push({
+      station: fSt,
+      avail: avail,
+      ok: avail > 0
+    });
+    if (avail < minAvail) {
+      minAvail = avail;
+    }
+  });
+
+  kitCount = feederStations.length > 0 ? (minAvail === 999999 ? 0 : minAvail) : manualBufferWip;
+  refreshUiNumbers();
+}
+
+// 刷新介面數字與按鈕狀態
+function refreshUiNumbers() {
+  document.getElementById("wipInText").textContent = isRootStation ? manualBufferWip : kitCount;
+  document.getElementById("wipOutText").textContent = currentOutWip;
+  document.getElementById("cycleTotalBadge").textContent = `累計完成：${currentOutWip} 件`;
+
+  // 渲染前置零件晶片
+  if (!isRootStation && feederStations.length > 0) {
+    const container = document.getElementById("feederChips");
+    container.innerHTML = "";
+    feederDetails.forEach(d => {
+      const chip = document.createElement("span");
+      chip.className = `feeder-chip ${d.ok ? 'chip-ok' : 'chip-empty'}`;
+      chip.innerHTML = `${d.station}: ${d.avail}件 ${d.ok ? '✓' : '×'}`;
+      container.appendChild(chip);
+    });
+
+    const badge = document.getElementById("kitSummaryBadge");
+    if (kitCount > 0) {
+      badge.textContent = `可組裝：${kitCount} 套`;
+      badge.style.color = "#16a34a";
+    } else {
+      badge.textContent = `⚠️ 缺料 (可組裝 0 套)`;
+      badge.style.color = "#dc2626";
+    }
+  }
+
+  // 🌟 作業計時中：按鈕永遠是亮紅燈且「絕對可點擊停止」
+  if (isWorking) {
+    const btn = document.getElementById("mainActionBtn");
+    btn.disabled = false;
+    btn.className = "main-btn btn-finish";
+    return;
+  }
+
+  // 🌟 非計時中：
+  // 1. 若為起點工站 (前無工作站，如 ST01, ST03, ST06, ST07, ST08)：不受原物料限制，自由計時！
+  if (isRootStation) {
+    enableStartButton(`▶ 開始第 ${currentOutWip + 1} 次作業`);
+    showMsg("🟢 第一站（原料直接投放）：不受庫存限制，隨時可開始作業！", "#10b981");
+    return;
+  }
+
+  // 2. 若為下游工站 (前面有工站，如 ST02, ST04, ST05)：嚴格受前置齊套庫存限制！
+  if (kitCount <= 0) {
+    const missing = feederDetails.filter(d => !d.ok).map(d => d.station);
+    disableStartButton("⛔ 站前缺料（可組裝 0 套）");
+    showMsg(`⚠️ 缺料工站：[${missing.join(", ")}] 庫存不足，請等待前置工站完工送達或按 [+] 補料！`, "#dc2626");
+  } else {
+    enableStartButton(`▶ 開始第 ${currentOutWip + 1} 次作業`);
+    showMsg(`✓ 物料齊全（可齊套 ${kitCount} 組），隨時可開始作業`, "#10b981");
+  }
+}
+
+function enableStartButton(text) {
+  const btn = document.getElementById("mainActionBtn");
+  btn.disabled = false;
+  btn.textContent = text;
+  btn.className = "main-btn btn-start";
+}
+
+function disableStartButton(text) {
+  const btn = document.getElementById("mainActionBtn");
+  btn.disabled = true;
+  btn.textContent = text;
+  btn.className = "main-btn btn-disabled";
+}
+
+// 手動調整 WIP
+async function updateWipDb(newIn, newOut) {
+  if (newIn < 0) newIn = 0;
+  if (newOut < 0) newOut = 0;
+  manualBufferWip = newIn;
+  currentOutWip = newOut;
+
+  await fetch(`${SUPABASE_URL}/rest/v1/station_wip?id=eq.${wipRecordId}`, {
+    method: "PATCH",
+    headers: {
+      apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      input_wip: manualBufferWip,
+      output_wip: currentOutWip,
+      updated_at: new Date().toISOString()
+    })
+  });
+
+  await computeKitting();
+}
+
+document.getElementById("btnPlusIn").onclick = () => updateWipDb(manualBufferWip + 1, currentOutWip);
+document.getElementById("btnMinusIn").onclick = () => updateWipDb(manualBufferWip - 1, currentOutWip);
+
+// 背景雙向即時同步 (每 2 秒輪詢前置站點 output_wip)
+async function autoSyncLive() {
+  if (!wipRecordId) return;
+
+  try {
+    const wipRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/station_wip?id=eq.${wipRecordId}&select=input_wip,output_wip`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
+    );
+    const wipData = await wipRes.json();
+    if (wipData.length > 0) {
+      manualBufferWip = wipData[0].input_wip || 0;
+      currentOutWip = wipData[0].output_wip || 0;
+    }
+
+    // 檢查後台是否一鍵清空重置
+    if (!isWorking && currentOutWip > 0) {
+      const eventRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/event?group_id=eq.${groupId}&station_id=eq.${stationId}&select=id`,
+        { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
+      );
+      const evList = await eventRes.json();
+      if (evList.length === 0) {
+        currentOutWip = 0;
+        manualBufferWip = 0;
+        document.getElementById("historyList").innerHTML = `<div style="text-align:center; color:#94a3b8; padding: 10px;">後台已重置，準備新一輪競賽</div>`;
+        showMsg("✓ 後台已重置，可重新開跑！", "#10b981");
+      }
+    }
+
+    await computeKitting();
+  } catch(e) {}
+}
+
+// 主操作按鈕：開始 (齊套檢驗) / 完成 (完工計數 + 同步扣料)
+const mainBtn = document.getElementById("mainActionBtn");
+mainBtn.addEventListener("click", async function() {
+  if (!isWorking) {
+    // --- 開始作業 ---
+    if (!isRootStation && kitCount <= 0) {
+      alert("❌ 站前缺料或物料未齊套，禁止開始計時！請等待前站送料或手動補入備料。");
+      return;
+    }
+
+    isWorking = true;
+    await computeKitting();
+
+    const prodId = getCurProductCode();
+    startTime = new Date();
+
+    mainBtn.disabled = false;
+    mainBtn.textContent = `■ 完成第 ${currentOutWip + 1} 件作業 (${prodId})`;
+    mainBtn.className = "main-btn btn-finish";
+    showMsg("計時進行中...", "#10b981");
+
+    startTimer();
+  } else {
+    // --- 完成作業 ---
+    mainBtn.disabled = true;
+    showMsg("完工紀錄中...", "#64748b");
+    clearInterval(timerInterval);
+
+    const finishTime = new Date();
+    const durationSec = Math.round((finishTime - startTime) / 1000);
+    const finishedProduct = getCurProductCode();
+
+    try {
+      // 1. 本站完工數 + 1 (等同於自動扣減各前置工站部件 1 個)
+      await updateWipDb(manualBufferWip, currentOutWip + 1);
+
+      // 2. 一次性寫入 COMPLETED
+      await fetch(`${SUPABASE_URL}/rest/v1/event`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          group_id: groupId,
+          station_id: stationId,
+          product_id: finishedProduct,
+          start_time: startTime.toISOString(),
+          finish_time: finishTime.toISOString(),
+          duration_sec: durationSec,
+          status: "COMPLETED",
+          wip_before_start: kitCount,
+          wip_after_finish: currentOutWip
+        })
+      });
+
+      addHistoryItem(currentOutWip, finishedProduct, durationSec, kitCount);
+
+      showMsg(`✓ 第 ${currentOutWip} 件完成！耗時 ${durationSec} 秒`, "#10b981");
+
+      isWorking = false;
+      document.getElementById("timerDisplay").textContent = "00:00.0";
+      
+      await computeKitting();
+    } catch (err) {
+      mainBtn.disabled = false;
+      showMsg("存檔失敗：" + err.message, "#ef4444");
+    }
+  }
+});
+
+function addHistoryItem(count, prod, sec, wip) {
+  const list = document.getElementById("historyList");
+  if (count === 1) list.innerHTML = "";
+
+  const item = document.createElement("div");
+  item.className = "history-item";
+  item.innerHTML = `
+    <span><strong>#${count}</strong> (${prod})</span>
+    <span>工時: <b>${sec}秒</b></span>
+    <span style="color:#64748b;">開工齊套數: ${wip}</span>
+  `;
+  list.insertBefore(item, list.firstChild);
+}
+
+function startTimer() {
+  const startMs = Date.now();
+  timerInterval = setInterval(() => {
+    const delta = Date.now() - startMs;
+    const sec = Math.floor(delta / 1000);
+    const ms = Math.floor((delta % 1000) / 100);
+    const m = String(Math.floor(sec / 60)).padStart(2, '0');
+    const s = String(sec % 60).padStart(2, '0');
+    document.getElementById("timerDisplay").textContent = `${m}:${s}.${ms}`;
+  }, 100);
+}
+
+function showMsg(text, color) {
+  const el = document.getElementById("msg");
+  el.textContent = text;
+  el.style.color = color;
+}
+
+init();
+</script>
+</body>
+</html>
