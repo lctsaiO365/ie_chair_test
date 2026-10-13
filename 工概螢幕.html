@@ -90,9 +90,10 @@
       box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
     }
     .flow-row {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap:wrap;
       background: #f8fafc; padding: 8px 12px; border-radius: 8px;
     }
+    .flow-row select { max-width:100%; }
   </style>
 </head>
 <body>
@@ -220,7 +221,8 @@
   <div id="flowModal" class="modal">
     <div class="modal-content">
       <h3 style="margin-top:0;">🛠️ 自訂工站前後流向關係</h3>
-      <div id="flowRowsContainer" style="max-height:300px; overflow-y:auto; margin: 15px 0;"></div>
+      <p style="font-size:13px;color:#64748b;margin:0 0 8px;">每個工站可設定「只收前站產品」或「前站產品＋現場原料」。現場原料不是另一個來源工站，不會新增前置站或連接線；例如 ST04 使用前站產品與現場原料時，前置站仍只有 ST03，流程圖只連一條 ST03 → ST04。起始站固定原料充足。</p>
+      <div id="flowRowsContainer" style="max-height:360px; overflow-y:auto; margin: 15px 0;"></div>
       <div style="display:flex; gap:10px;">
         <button onclick="addFlowRow()" class="btn-secondary">+ 新增銜接關係</button>
         <button onclick="presetStandardFlow()" style="background:#f1f5f9;">恢復 1→8 標準直線</button>
@@ -375,6 +377,9 @@ async function renderFlowDiagram(group) {
     return;
   }
 
+  const flowTypeMap = {};
+  flows.forEach(f => { flowTypeMap[(f.station_id || "").trim()] = f.station_type || "product_raw"; });
+
   const wipMap = {};
   wips.forEach(w => {
     wipMap[(w.station_id || "").trim()] = {
@@ -396,28 +401,37 @@ async function renderFlowDiagram(group) {
     const w = wipMap[stId] || { inWip: 0, outWip: 0 };
 
     // 找出所有前置來源站 (predecessors)
-    const predecessors = flows
+    const predecessors = [...new Set(flows
       .filter(f => (f.next_station_id || "").trim() === stId)
-      .map(f => (f.station_id || "").trim());
+      .map(f => (f.station_id || "").trim())
+      .filter(Boolean))];
 
     // 找出所有後續去向站 (successors)
-    const successors = flows
+    const successors = [...new Set(flows
       .filter(f => (f.station_id || "").trim() === stId)
       .map(f => (f.next_station_id || "").trim())
-      .filter(Boolean);
+      .filter(Boolean))];
 
-    // 1. 計算【站前可用量 / 齊套數】
-    let inQty = w.inWip;
+    // 1. 計算【現場原料與前站物料皆足夠的可開工套數】
+    const rawMaterialAvail = Math.max(0, Number(w.inWip) || 0);
+    const isRootStation = predecessors.length === 0;
+    const stationType = flowTypeMap[stId] || "product_raw";
+    const needsRawMaterial = !isRootStation && stationType === "product_raw";
+    // 起始站原料假定充足；中間站依設定決定是否需要現場原料。
+    let inQty = isRootStation ? 1 : (needsRawMaterial ? rawMaterialAvail : Infinity);
     const isMerge = predecessors.length > 1;
 
     if (predecessors.length > 0) {
-      let minAvail = 999999;
+      let minFeederAvail = Infinity;
       predecessors.forEach(p => {
-        const pOut = wipMap[p]?.outWip || 0;
-        const avail = Math.max(0, pOut - w.outWip + w.inWip);
-        if (avail < minAvail) minAvail = avail;
+        const pOut = Math.max(0, Number(wipMap[p]?.outWip) || 0);
+        const avail = Math.max(0, pOut - (Number(w.outWip) || 0));
+        minFeederAvail = Math.min(minFeederAvail, avail);
       });
-      inQty = minAvail === 999999 ? 0 : minAvail;
+      inQty = Math.min(
+        needsRawMaterial ? rawMaterialAvail : Infinity,
+        minFeederAvail === Infinity ? 0 : minFeederAvail
+      );
     }
 
     // 2. 計算【站後在庫量】: 本站完工 - 下游站完工消耗 (若無下游站則為總成品數)
@@ -435,10 +449,12 @@ async function renderFlowDiagram(group) {
 
     // 3. 節點標籤呈現
     let inText = "";
-    if (predecessors.length === 0) {
-      inText = "📥 原料充足";
+    if (isRootStation) {
+      inText = `📥 起始站：原料充足`;
+    } else if (needsRawMaterial) {
+      inText = `📥 產品＋原料｜可開工: ${Number.isFinite(inQty) ? inQty : 0} 套（原料 ${rawMaterialAvail} 套）`;
     } else {
-      inText = `📥 站前: ${inQty}${isMerge ? '套' : '件'}`;
+      inText = `📥 僅需前站產品｜可開工: ${Number.isFinite(inQty) ? inQty : 0} 套`;
     }
 
     let outText = "";
@@ -459,7 +475,7 @@ async function renderFlowDiagram(group) {
     // 4. 顏色預警邏輯：優先以該組 Cycle Time 最大值標定瓶頸站！
     if (isBottleneck) {
       styles.push(`style ${stId} fill:#fee2e2,stroke:#dc2626,stroke-width:4px;`); // 🚨 紅燈 (該組 Cycle Time 最大值瓶頸站)
-    } else if (predecessors.length > 0 && inQty === 0) {
+    } else if (!isRootStation && inQty === 0) {
       styles.push(`style ${stId} fill:#fef9c3,stroke:#ca8a04,stroke-width:2px;`); // 黃燈 (下游缺料飢餓)
     } else if (inQty >= 4 || currentOutBuffer >= 4) {
       styles.push(`style ${stId} fill:#fee2e2,stroke:#dc2626,stroke-width:3px;`); // 紅燈 (庫存塞車)
@@ -468,9 +484,17 @@ async function renderFlowDiagram(group) {
     }
   });
 
+  // 只依工站流程連線；現場原料不是工站來源。相同站對去重，避免重複畫線。
+  const renderedEdges = new Set();
   flows.forEach(f => {
-    if (f.next_station_id) {
-      code += `  ${f.station_id.trim()} --> ${f.next_station_id.trim()}\n`;
+    const from = (f.station_id || "").trim();
+    const to = (f.next_station_id || "").trim();
+    if (from && to) {
+      const edgeKey = `${from}-->${to}`;
+      if (!renderedEdges.has(edgeKey)) {
+        renderedEdges.add(edgeKey);
+        code += `  ${from} --> ${to}\n`;
+      }
     }
   });
 
@@ -504,7 +528,7 @@ async function openFlowModal() {
   container.innerHTML = "";
 
   if (data.length > 0) {
-    data.forEach(item => addFlowRow(item.station_id, item.next_station_id));
+    data.forEach(item => addFlowRow(item.station_id, item.next_station_id, item.station_type || "product_raw"));
   } else {
     presetStandardFlow();
   }
@@ -514,7 +538,7 @@ function closeFlowModal() {
   document.getElementById("flowModal").style.display = "none";
 }
 
-function addFlowRow(fromSt = "ST01", toSt = "") {
+function addFlowRow(fromSt = "ST01", toSt = "", stationType = "product_raw") {
   const container = document.getElementById("flowRowsContainer");
   const row = document.createElement("div");
   row.className = "flow-row";
@@ -527,6 +551,10 @@ function addFlowRow(fromSt = "ST01", toSt = "") {
     <select class="from-st">${fromOptions}</select>
     <span style="font-weight:bold; color:#64748b;">➡️ 送往 ➡️</span>
     <select class="to-st">${toOptions}</select>
+    <select class="station-type" title="本站開工所需物料">
+      <option value="product" ${stationType === "product" ? "selected" : ""}>只收前站產品</option>
+      <option value="product_raw" ${stationType !== "product" ? "selected" : ""}>前站產品＋現場原料</option>
+    </select>
     <button onclick="this.parentElement.remove()" style="background:#fee2e2; border:none; color:#dc2626; border-radius:6px; padding:6px 10px;">🗑️</button>
   `;
   container.appendChild(row);
@@ -538,7 +566,7 @@ function presetStandardFlow() {
   for (let i = 0; i < allStations.length; i++) {
     const cur = allStations[i];
     const nxt = (i < allStations.length - 1) ? allStations[i+1] : "";
-    addFlowRow(cur, nxt);
+    addFlowRow(cur, nxt, "product_raw");
   }
 }
 
@@ -558,7 +586,8 @@ async function saveCustomFlow() {
       group_id: group,
       station_id: from,
       station_name: from,
-      next_station_id: to
+      next_station_id: to,
+      station_type: r.querySelector(".station-type").value
     });
   });
 
