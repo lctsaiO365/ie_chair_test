@@ -452,7 +452,7 @@ async function renderFlowDiagram(group) {
     if (isRootStation) {
       inText = `📥 起始站：原料充足`;
     } else if (needsRawMaterial) {
-      inText = `📥 產品＋原料｜可開工: ${Number.isFinite(inQty) ? inQty : 0} 套（原料 ${rawMaterialAvail} 套）`;
+      inText = `📥 產品＋原料｜可開工: ${Number.isFinite(inQty) ? inQty : 0} 套（原料充足）`;
     } else {
       inText = `📥 僅需前站產品｜可開工: ${Number.isFinite(inQty) ? inQty : 0} 套`;
     }
