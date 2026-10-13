@@ -192,8 +192,8 @@
     <div class="wip-grid">
       <!-- 站前可用/備料 -->
       <div class="wip-box wip-in">
-        <div class="wip-title">📥 站前可用量</div>
-        <div class="wip-subtitle" id="inSubtitle">齊套可組裝數</div>
+        <div class="wip-title">📥 現場原料／可開工量</div>
+        <div class="wip-subtitle" id="inSubtitle">現場原料與前站物料皆足夠的可開工套數</div>
         <div class="wip-counter">
           <button class="wip-btn btn-in" id="btnMinusIn">-</button>
           <span class="wip-val" id="wipInText">0</span>
@@ -213,7 +213,7 @@
     <!-- 匯流工站齊套狀態卡 (若有前置站點則呈現各零件狀態) -->
     <div id="feederStatusCard" class="feeder-card" style="display:none;">
       <div class="feeder-title">
-        <span>🧩 前置零件庫存狀態（各需 1 件）：</span>
+        <span>🧩 前置工站產品庫存狀態（各需 1 件）：</span>
         <span id="kitSummaryBadge" style="font-size:12px; font-weight:bold;"></span>
       </div>
       <div id="feederChips" class="feeder-chips-container">
@@ -286,6 +286,7 @@ function getCurProductCode() {
 let isRootStation = false;     // 是否為起點工站 (前無工作站)
 let feederStations = [];       // 前置工站清單 (如 ST02, ST04, ST06, ST07, ST08)
 let nextStationId = null;      // 下一站代號
+let stationType = "product_raw"; // 本站類型：product=只需前站產品；product_raw=前站產品＋現場原料
 
 let manualBufferWip = 0;       // 作業員手動設定的額外備料套數 (input_wip)
 let currentOutWip = 0;         // 站後累計完工數 (output_wip)
@@ -293,6 +294,7 @@ let wipRecordId = null;
 
 let feederDetails = [];        // 前置站庫存詳情 [{ station, avail, ok }]
 let kitCount = 0;              // 當前可齊套組裝數
+let kitCountAtStart = 0;       // 本次開工前可用套數（供完工紀錄）
 
 let isWorking = false;
 let startTime = null;
@@ -321,28 +323,43 @@ async function updateFlowInfo() {
   );
   const flowData = await flowRes.json();
 
-  feederStations = flowData
-    .filter(f => (f.next_station_id || "").trim() === stationId)
-    .map(f => f.station_id.trim());
+  // 正規化工站代碼，避免資料庫內大小寫、不可見字元或特殊空白造成重複顯示。
+  const normalizeStationId = value => String(value || "")
+    .normalize("NFKC")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[\s\u00A0]+/g, "")
+    .toUpperCase();
+  const currentStationKey = normalizeStationId(stationId);
 
-  const myFlow = flowData.find(f => (f.station_id || "").trim() === stationId);
-  nextStationId = myFlow && myFlow.next_station_id ? myFlow.next_station_id.trim() : null;
+  // 前置來源只計算實際工站連線；同一來源站只保留一次。
+  const feederMap = new Map();
+  flowData.forEach(f => {
+    if (normalizeStationId(f.next_station_id) !== currentStationKey) return;
+    const sourceName = String(f.station_id || "").normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g, "").trim().toUpperCase();
+    const sourceKey = normalizeStationId(sourceName);
+    if (sourceKey && !feederMap.has(sourceKey)) feederMap.set(sourceKey, sourceName);
+  });
+  feederStations = [...feederMap.values()];
+
+  const myFlow = flowData.find(f => normalizeStationId(f.station_id) === currentStationKey);
+  nextStationId = myFlow && myFlow.next_station_id ? String(myFlow.next_station_id).normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g, "").trim().toUpperCase() : null;
+  stationType = myFlow?.station_type || "product_raw";
 
   const feederTextEl = document.getElementById("feederStationListText");
   const nextTextEl = document.getElementById("nextStationText");
 
   if (feederStations.length === 0) {
     isRootStation = true;
-    feederTextEl.textContent = "🟢 起點第一站（無前置工站，原料自由取用）";
+    feederTextEl.textContent = "🟢 起點工站（無前置工站，需有現場原料）";
     feederTextEl.style.color = "#16a34a";
-    document.getElementById("feederStatusCard").style.display = "none";
-    document.getElementById("inSubtitle").textContent = "現場零件庫存";
+    document.getElementById("feederStatusCard").style.display = "block";
+    document.getElementById("inSubtitle").textContent = "現場原料可用套數";
   } else {
     isRootStation = false;
     feederTextEl.textContent = `${feederStations.join(" + ")} (共 ${feederStations.length} 站)`;
     feederTextEl.style.color = "#2563eb";
     document.getElementById("feederStatusCard").style.display = "block";
-    document.getElementById("inSubtitle").textContent = "可齊套組裝數";
+    document.getElementById("inSubtitle").textContent = "現場原料與前站物料皆足夠的可開工套數";
   }
 
   if (nextStationId) {
@@ -383,62 +400,71 @@ async function fetchWipData() {
 
 // 🌟 核心計算：齊套約束（BOM 1:1）計算
 async function computeKitting() {
+  const rawMaterialAvail = Math.max(0, Number(manualBufferWip) || 0);
+
+  // 起始站沿用原始設定：原料假定充足，不以 input_wip 限制開工，也不扣現場原料庫存。
   if (isRootStation || feederStations.length === 0) {
-    kitCount = manualBufferWip;
+    feederDetails = [{ station: "現場原料", avail: "充足", ok: true }];
+    kitCount = 1; // 每次計時作業仍是一件／一套
     refreshUiNumbers();
     return;
   }
 
-  // 抓取全組 station_wip
+  // 中間站依設定判斷是否需要現場原料。
+  // 注意：現場原料是本站的獨立庫存，不是前置工站，因此絕不放進 feederDetails，
+  // 避免把「現場原料」顯示成額外來源站；此處只列實際連線的前置工站。
+  const needsRawMaterial = stationType === "product_raw";
+  feederDetails = [];
+
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${groupId}&select=*`,
+    `${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${encodeURIComponent(groupId)}&select=*`,
     { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
   );
+  if (!res.ok) throw new Error("讀取工站庫存失敗，HTTP " + res.status);
+
   const allWips = await res.json();
   const wipMap = {};
-  allWips.forEach(w => {
-    wipMap[(w.station_id || "").trim()] = w;
-  });
+  allWips.forEach(w => { wipMap[(w.station_id || "").trim()] = w; });
 
-  // 本站累計已消耗量 = 本站已完成數 + (若正在作業中則已取走1套)
-  const consumed = currentOutWip + (isWorking ? 1 : 0);
-
-  feederDetails = [];
-  let minAvail = 999999;
+  // 本站完工數加上正在作業中已預留的一套，代表前站物料已被本站消耗／預留的數量。
+  // input_wip 是本站獨立現場原料，不可再加進每一個前站的 avail。
+  const consumed = (Number(currentOutWip) || 0) + (isWorking ? 1 : 0);
+  let minFeederAvail = Infinity;
 
   feederStations.forEach(fSt => {
     const fWip = wipMap[fSt] || { output_wip: 0 };
-    const fTotalOut = fWip.output_wip || 0;
-    // 前站總產出 - 本站已消耗量 + 本站手動額外備料
-    const avail = Math.max(0, fTotalOut - consumed + manualBufferWip);
-    feederDetails.push({
-      station: fSt,
-      avail: avail,
-      ok: avail > 0
-    });
-    if (avail < minAvail) {
-      minAvail = avail;
-    }
+    const fTotalOut = Math.max(0, Number(fWip.output_wip) || 0);
+    const avail = Math.max(0, fTotalOut - consumed);
+    feederDetails.push({ station: fSt, avail, ok: avail > 0 });
+    minFeederAvail = Math.min(minFeederAvail, avail);
   });
 
-  kitCount = feederStations.length > 0 ? (minAvail === 999999 ? 0 : minAvail) : manualBufferWip;
+  kitCount = Math.min(
+    needsRawMaterial ? rawMaterialAvail : Infinity,
+    minFeederAvail === Infinity ? 0 : minFeederAvail
+  );
   refreshUiNumbers();
+}
+
+// 本站現場原料是否不足（只作缺料提示，不當成前置工站）
+function rawMaterialMissing() {
+  return (Number(manualBufferWip) || 0) <= 0;
 }
 
 // 刷新介面數字與按鈕狀態
 function refreshUiNumbers() {
-  document.getElementById("wipInText").textContent = isRootStation ? manualBufferWip : kitCount;
+  document.getElementById("wipInText").textContent = kitCount;
   document.getElementById("wipOutText").textContent = currentOutWip;
   document.getElementById("cycleTotalBadge").textContent = `累計完成：${currentOutWip} 件`;
 
   // 渲染前置零件晶片
-  if (!isRootStation && feederStations.length > 0) {
+  if (document.getElementById("feederChips")) {
     const container = document.getElementById("feederChips");
     container.innerHTML = "";
     feederDetails.forEach(d => {
       const chip = document.createElement("span");
       chip.className = `feeder-chip ${d.ok ? 'chip-ok' : 'chip-empty'}`;
-      chip.innerHTML = `${d.station}: ${d.avail}件 ${d.ok ? '✓' : '×'}`;
+      chip.innerHTML = `${d.station}: ${d.avail === "充足" ? "充足" : d.avail + (d.station === "現場原料" ? "套" : "件")} ${d.ok ? '✓' : '×'}`;
       container.appendChild(chip);
     });
 
@@ -460,22 +486,15 @@ function refreshUiNumbers() {
     return;
   }
 
-  // 🌟 非計時中：
-  // 1. 若為起點工站 (前無工作站，如 ST01, ST03, ST06, ST07, ST08)：不受原物料限制，自由計時！
-  if (isRootStation) {
-    enableStartButton(`▶ 開始第 ${currentOutWip + 1} 次作業`);
-    showMsg("🟢 第一站（原料直接投放）：不受庫存限制，隨時可開始作業！", "#10b981");
-    return;
-  }
-
-  // 2. 若為下游工站 (前面有工站，如 ST02, ST04, ST05)：嚴格受前置齊套庫存限制！
-  if (kitCount <= 0) {
+  // 起始站原料假定充足；非起始站須確認現場原料與所有前站物料
+  if (!(isRootStation || feederStations.length === 0) && kitCount <= 0) {
     const missing = feederDetails.filter(d => !d.ok).map(d => d.station);
-    disableStartButton("⛔ 站前缺料（可組裝 0 套）");
-    showMsg(`⚠️ 缺料工站：[${missing.join(", ")}] 庫存不足，請等待前置工站完工送達或按 [+] 補料！`, "#dc2626");
+    if (stationType === "product_raw" && rawMaterialMissing()) missing.unshift("現場原料");
+    disableStartButton("⛔ 前置產品或現場原料不足");
+    showMsg(`⚠️ 缺料來源：[${missing.join(", ") || "前站產品"}]，請補料或等待前站完工。`, "#dc2626");
   } else {
     enableStartButton(`▶ 開始第 ${currentOutWip + 1} 次作業`);
-    showMsg(`✓ 物料齊全（可齊套 ${kitCount} 組），隨時可開始作業`, "#10b981");
+    showMsg(`✓ 物料齊全，可開始作業 ${kitCount} 套`, "#10b981");
   }
 }
 
@@ -495,24 +514,27 @@ function disableStartButton(text) {
 
 // 手動調整 WIP
 async function updateWipDb(newIn, newOut) {
-  if (newIn < 0) newIn = 0;
-  if (newOut < 0) newOut = 0;
-  manualBufferWip = newIn;
-  currentOutWip = newOut;
+  newIn = Math.max(0, Number(newIn) || 0);
+  newOut = Math.max(0, Number(newOut) || 0);
 
-  await fetch(`${SUPABASE_URL}/rest/v1/station_wip?id=eq.${wipRecordId}`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/station_wip?id=eq.${wipRecordId}`, {
     method: "PATCH",
     headers: {
       apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      input_wip: manualBufferWip,
-      output_wip: currentOutWip,
+      input_wip: newIn,
+      output_wip: newOut,
       updated_at: new Date().toISOString()
     })
   });
 
+  if (!res.ok) throw new Error("更新庫存失敗，HTTP " + res.status);
+
+  // 確認資料庫更新成功後才改變前端狀態
+  manualBufferWip = newIn;
+  currentOutWip = newOut;
   await computeKitting();
 }
 
@@ -557,14 +579,28 @@ async function autoSyncLive() {
 const mainBtn = document.getElementById("mainActionBtn");
 mainBtn.addEventListener("click", async function() {
   if (!isWorking) {
-    // --- 開始作業 ---
-    if (!isRootStation && kitCount <= 0) {
-      alert("❌ 站前缺料或物料未齊套，禁止開始計時！請等待前站送料或手動補入備料。");
+    // --- 開始作業：起始站原料假定充足；中間站依 station_type 檢查與扣料 ---
+    await computeKitting();
+    if (kitCount <= 0) {
+      alert("❌ 前置產品或現場原料不足，禁止開始作業！");
       return;
     }
 
+    kitCountAtStart = kitCount;
+    const oldInputWip = manualBufferWip;
     isWorking = true;
-    await computeKitting();
+
+    try {
+      // 起始站原料假定充足；只有設定為「前站產品＋現場原料」的中間站才扣料。
+      if (!(isRootStation || feederStations.length === 0) && stationType === "product_raw") {
+        await updateWipDb(oldInputWip - 1, currentOutWip);
+      }
+    } catch (err) {
+      isWorking = false;
+      await computeKitting();
+      alert("扣料失敗，無法開始作業：" + err.message);
+      return;
+    }
 
     const prodId = getCurProductCode();
     startTime = new Date();
@@ -586,7 +622,8 @@ mainBtn.addEventListener("click", async function() {
     const finishedProduct = getCurProductCode();
 
     try {
-      // 1. 本站完工數 + 1 (等同於自動扣減各前置工站部件 1 個)
+      // 1. 原料已在開工時扣除；完工時只增加本站完工數
+      isWorking = false;
       await updateWipDb(manualBufferWip, currentOutWip + 1);
 
       // 2. 一次性寫入 COMPLETED
@@ -604,12 +641,12 @@ mainBtn.addEventListener("click", async function() {
           finish_time: finishTime.toISOString(),
           duration_sec: durationSec,
           status: "COMPLETED",
-          wip_before_start: kitCount,
+          wip_before_start: kitCountAtStart,
           wip_after_finish: currentOutWip
         })
       });
 
-      addHistoryItem(currentOutWip, finishedProduct, durationSec, kitCount);
+      addHistoryItem(currentOutWip, finishedProduct, durationSec, kitCountAtStart);
 
       showMsg(`✓ 第 ${currentOutWip} 件完成！耗時 ${durationSec} 秒`, "#10b981");
 
