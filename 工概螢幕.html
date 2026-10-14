@@ -377,61 +377,76 @@ async function renderFlowDiagram(group) {
     return;
   }
 
+  // 依每個工站自己的 station_type 判斷是否需要本站現場原料。
+  // product: 只需要前站產品；product_raw: 前站產品 + 本站現場原料。
   const flowTypeMap = {};
-  flows.forEach(f => { flowTypeMap[(f.station_id || "").trim()] = f.station_type || "product_raw"; });
+  flows.forEach(f => {
+    const stationKey = (f.station_id || "").trim().toUpperCase();
+    const rawType = String(f.station_type || "product_raw").trim().toLowerCase();
+    flowTypeMap[stationKey] = rawType === "product" ? "product" : "product_raw";
+  });
 
   const wipMap = {};
   wips.forEach(w => {
-    wipMap[(w.station_id || "").trim()] = {
-      inWip: w.input_wip || 0,
-      outWip: w.output_wip || 0
+    const stationKey = (w.station_id || "").trim().toUpperCase();
+    wipMap[stationKey] = {
+      // input_wip 是本站現場原料；output_wip 是本站已完成產出累計。
+      // 兩者用途不同，絕不可直接相加。
+      inWip: Math.max(0, Number(w.input_wip) || 0),
+      outWip: Math.max(0, Number(w.output_wip) || 0)
     };
   });
 
   const stationSet = new Set();
   flows.forEach(f => {
-    if (f.station_id) stationSet.add(f.station_id.trim());
-    if (f.next_station_id) stationSet.add(f.next_station_id.trim());
+    if (f.station_id) stationSet.add(f.station_id.trim().toUpperCase());
+    if (f.next_station_id) stationSet.add(f.next_station_id.trim().toUpperCase());
   });
 
   let code = "graph LR\n";
   const styles = [];
 
   stationSet.forEach(stId => {
-    const w = wipMap[stId] || { inWip: 0, outWip: 0 };
+    const stationKey = stId.toUpperCase();
+    const w = wipMap[stationKey] || { inWip: 0, outWip: 0 };
 
-    // 找出所有前置來源站 (predecessors)
+    // 找出所有前置來源站 (predecessors)，同一來源站只計算一次。
     const predecessors = [...new Set(flows
-      .filter(f => (f.next_station_id || "").trim() === stId)
-      .map(f => (f.station_id || "").trim())
+      .filter(f => (f.next_station_id || "").trim().toUpperCase() === stationKey)
+      .map(f => (f.station_id || "").trim().toUpperCase())
       .filter(Boolean))];
 
-    // 找出所有後續去向站 (successors)
+    // 找出所有後續去向站 (successors)，同一去向站只計算一次。
     const successors = [...new Set(flows
-      .filter(f => (f.station_id || "").trim() === stId)
-      .map(f => (f.next_station_id || "").trim())
+      .filter(f => (f.station_id || "").trim().toUpperCase() === stationKey)
+      .map(f => (f.next_station_id || "").trim().toUpperCase())
       .filter(Boolean))];
 
     // 1. 計算【現場原料與前站物料皆足夠的可開工套數】
-    const rawMaterialAvail = Math.max(0, Number(w.inWip) || 0);
+    const rawMaterialAvail = w.inWip;
     const isRootStation = predecessors.length === 0;
-    const stationType = flowTypeMap[stId] || "product_raw";
+    const stationType = flowTypeMap[stationKey] || "product_raw";
     const needsRawMaterial = !isRootStation && stationType === "product_raw";
-    // 起始站原料假定充足；中間站依設定決定是否需要現場原料。
-    let inQty = isRootStation ? 1 : (needsRawMaterial ? rawMaterialAvail : Infinity);
     const isMerge = predecessors.length > 1;
+    let inQty = 0;
 
-    if (predecessors.length > 0) {
+    if (isRootStation) {
+      // 起始站沿用既有規則：原料視為充足，不受 input_wip 限制。
+      inQty = Infinity;
+    } else {
+      // 前站可用產品 = 前站累計產出 - 本站已完成消耗量。
+      // 現場原料只在 product_raw 模式下另外限制齊套數，不與前站產品相加。
       let minFeederAvail = Infinity;
       predecessors.forEach(p => {
         const pOut = Math.max(0, Number(wipMap[p]?.outWip) || 0);
-        const avail = Math.max(0, pOut - (Number(w.outWip) || 0));
-        minFeederAvail = Math.min(minFeederAvail, avail);
+        const consumedByThisStation = Math.max(0, Number(w.outWip) || 0);
+        const feederAvail = Math.max(0, pOut - consumedByThisStation);
+        minFeederAvail = Math.min(minFeederAvail, feederAvail);
       });
-      inQty = Math.min(
-        needsRawMaterial ? rawMaterialAvail : Infinity,
-        minFeederAvail === Infinity ? 0 : minFeederAvail
-      );
+      const feederKitCount = minFeederAvail === Infinity ? 0 : minFeederAvail;
+      inQty = needsRawMaterial
+        ? Math.min(feederKitCount, rawMaterialAvail)
+        : feederKitCount;
     }
 
     // 2. 計算【站後在庫量】: 本站完工 - 下游站完工消耗 (若無下游站則為總成品數)
@@ -441,7 +456,7 @@ async function renderFlowDiagram(group) {
     if (!isFinalStation) {
       let downstreamConsumed = 0;
       successors.forEach(s => {
-        const sOut = wipMap[s]?.outWip || 0;
+        const sOut = wipMap[s.toUpperCase()]?.outWip || 0;
         if (sOut > downstreamConsumed) downstreamConsumed = sOut;
       });
       currentOutBuffer = Math.max(0, w.outWip - downstreamConsumed);
@@ -452,7 +467,7 @@ async function renderFlowDiagram(group) {
     if (isRootStation) {
       inText = `📥 起始站：原料充足`;
     } else if (needsRawMaterial) {
-      inText = `📥 前站產品＋原料｜可開工: ${Number.isFinite(inQty) ? inQty : 0} 套+原料充足`;
+      inText = `📥 產品＋原料｜可開工: ${Number.isFinite(inQty) ? inQty : 0} 套+原料充足`;
     } else {
       inText = `📥 僅需前站產品｜可開工: ${Number.isFinite(inQty) ? inQty : 0} 套`;
     }
