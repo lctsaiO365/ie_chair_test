@@ -2,8 +2,13 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>IE Chair - 工站即時同步計時器</title>
+  <!-- 📷 內置 HTML5 QR Code 相機掃描套件 -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -159,6 +164,148 @@
       display: flex; justify-content: space-between; padding: 7px 0;
       border-bottom: 1px solid #f1f5f9;
     }
+
+    /* 📷 相機掃描器專屬樣式 */
+    .scanner-card {
+      background: #fff; border-radius: 14px;
+      padding: 16px; margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid #e2e8f0;
+    }
+    .scanner-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .scanner-title {
+      font-size: 15px; font-weight: bold; color: #1e293b;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .scan-badge {
+      font-size: 11px; font-weight: bold;
+      padding: 3px 8px; border-radius: 12px;
+      background: #f1f5f9; color: #64748b;
+      transition: all 0.2s ease;
+    }
+    .badge-ready {
+      background: #ecfdf5 !important; color: #059669 !important;
+      border: 1px solid #a7f3d0;
+    }
+    .badge-locked {
+      background: #fef2f2 !important; color: #dc2626 !important;
+      border: 1px solid #fecaca;
+      animation: pulse-warn 1s infinite;
+    }
+    .badge-cooldown {
+      background: #fefce8 !important; color: #ca8a04 !important;
+      border: 1px solid #fef08a;
+    }
+    @keyframes pulse-warn {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    .btn-scanner-toggle {
+      padding: 6px 14px; font-size: 13px; font-weight: bold;
+      border-radius: 8px; border: 1px solid #cbd5e1;
+      background: #eff6ff; color: #2563eb;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+      touch-action: manipulation; transition: background 0.15s;
+    }
+    .btn-scanner-toggle:active { transform: scale(0.96); }
+    
+    .scanner-viewport-box {
+      width: 100%; max-width: 380px; margin: 10px auto;
+      background: #0f172a; border-radius: 12px;
+      overflow: hidden; position: relative;
+      display: none; border: 2px solid #3b82f6;
+    }
+    #qr-reader {
+      width: 100% !important; border: none !important;
+    }
+    #qr-reader video {
+      width: 100% !important; height: auto !important;
+      border-radius: 10px; display: block;
+    }
+    #qr-reader__dashboard { display: none !important; }
+
+    .scan-tip-banner {
+      padding: 10px 12px; border-radius: 8px;
+      font-size: 13px; font-weight: bold; text-align: center;
+      margin: 8px 0; display: none; line-height: 1.4;
+    }
+    .scan-guide-box {
+      font-size: 12px; color: #64748b; line-height: 1.6;
+      background: #f8fafc; padding: 10px 12px;
+      border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 10px;
+    }
+    @keyframes greenPulseAlert {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.9); border-color: #10b981; }
+      50% { box-shadow: 0 0 30px 10px rgba(16, 185, 129, 0.9); border-color: #059669; }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); border-color: #e2e8f0; }
+    }
+    .pulse-green-active {
+      animation: greenPulseAlert 1.2s ease-in-out 3;
+      border: 3px solid #10b981 !important;
+    }
+    /* 🌟 常態綠色呼吸燈 (料足可開工時常駐呼吸起伏) */
+    @keyframes breathingGreen {
+      0% {
+        box-shadow: 0 0 6px 1px rgba(16, 185, 129, 0.4);
+        border-color: #86efac;
+      }
+      50% {
+        box-shadow: 0 0 26px 8px rgba(16, 185, 129, 0.85);
+        border-color: #10b981;
+      }
+      100% {
+        box-shadow: 0 0 6px 1px rgba(16, 185, 129, 0.4);
+        border-color: #86efac;
+      }
+    }
+    .breathing-green-ready {
+      animation: breathingGreen 2.2s infinite ease-in-out !important;
+      border: 3px solid #10b981 !important;
+    }
+
+    /* 🌟 藍色作業流動燈 (計時作業進行中) */
+    @keyframes breathingBlue {
+      0% {
+        box-shadow: 0 0 6px 1px rgba(37, 99, 235, 0.35);
+        border-color: #93c5fd;
+      }
+      50% {
+        box-shadow: 0 0 22px 6px rgba(37, 99, 235, 0.8);
+        border-color: #2563eb;
+      }
+      100% {
+        box-shadow: 0 0 6px 1px rgba(37, 99, 235, 0.35);
+        border-color: #93c5fd;
+      }
+    }
+    .breathing-blue-working {
+      animation: breathingBlue 2s infinite ease-in-out !important;
+      border: 3px solid #2563eb !important;
+    }
+
+    /* 🌟 黃色防呆鎖定警示 (未滿冷卻秒數禁止完工) */
+    @keyframes breathingYellow {
+      0% {
+        box-shadow: 0 0 6px 1px rgba(245, 158, 11, 0.35);
+        border-color: #fde68a;
+      }
+      50% {
+        box-shadow: 0 0 22px 6px rgba(245, 158, 11, 0.85);
+        border-color: #f59e0b;
+      }
+      100% {
+        box-shadow: 0 0 6px 1px rgba(245, 158, 11, 0.35);
+        border-color: #fde68a;
+      }
+    }
+    .breathing-yellow-locked {
+      animation: breathingYellow 1.2s infinite ease-in-out !important;
+      border: 3px solid #f59e0b !important;
+    }
+
   </style>
 </head>
 <body>
@@ -169,6 +316,7 @@
       <div>
         <span class="badge" id="groupBadge">--</span>
         <span class="badge" id="stationBadge">--</span>
+        <span class="badge" id="modeBadge" style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-weight:bold;">🧪 測試練習</span>
       </div>
       <div style="display:flex; align-items:center; gap:8px;">
         <span class="sync-status"><span class="pulse-dot"></span>即時同步中</span>
@@ -180,6 +328,11 @@
       <span style="font-size:14px; font-weight:bold; color:#1e40af;">🏷️ 生產料號 (Part No.)：</span>
       <span id="partNoDisplay" style="font-size:16px; font-weight:800; color:#1d4ed8;">載入中...</span>
     </div>
+    <!-- 📦 現場原生零件標籤 (若有) -->
+    <div id="rawPartNoticeBox" style="display:none; margin-top:8px; padding:8px 12px; background:#fef3c7; border-radius:10px; border:1px solid #fde68a; font-size:13px; color:#92400e; font-weight:bold; align-items:center; justify-content:space-between;">
+      <span>📦 現場原生投料：<span id="rawPartNameText">零件5</span></span>
+      <span style="font-size:11px; font-weight:normal; background:#fff; padding:2px 6px; border-radius:4px; border:1px solid #fde68a;">完工自動扣料 -1</span>
+    </div>
     <!-- 前後工站流向清楚標籤 -->
     <div class="flow-info-box" style="margin-top:8px; padding:10px 12px; background:#f8fafc; border-radius:10px; border:1px solid #e2e8f0; font-size:13px; line-height:1.6;">
       <div><span style="font-weight:bold; color:#475569;">📥 前置來源站：</span><span id="feederStationListText" style="color:#2563eb; font-weight:bold;">確認中...</span></div>
@@ -189,11 +342,12 @@
 
   <!-- 站前與站後 WIP 看板 -->
   <div class="card">
-    <div class="wip-grid">
+    <!-- 一般工站 (純中間站或起點站) -->
+    <div class="wip-grid" id="normalWipGrid">
       <!-- 站前可用/備料 -->
       <div class="wip-box wip-in">
-        <div class="wip-title">📥 現場原料／可開工量</div>
-        <div class="wip-subtitle" id="inSubtitle">現場原料與前站物料皆足夠的可開工套數</div>
+        <div class="wip-title" id="inTitle">📥 站前可用量</div>
+        <div class="wip-subtitle" id="inSubtitle">齊套可組裝數</div>
         <div class="wip-counter">
           <button class="wip-btn btn-in" id="btnMinusIn">-</button>
           <span class="wip-val" id="wipInText">0</span>
@@ -210,10 +364,54 @@
       </div>
     </div>
 
+    <!-- 附加物料標籤 (若該工站有設定自訂配料才顯示) -->
+    <div id="customPartBadge" style="display:none; font-size:13px; font-weight:bold; color:#b45309; background:#fffbeb; padding:8px 12px; border-radius:8px; border:1px solid #fde68a; margin-top:10px; text-align:center;">
+      📦 附加配料：<span id="customPartText">--</span>
+    </div>
+    <!-- 混合工站舊有雙軌框保留隱藏不顯示 -->
+    <div id="mixedWipGrid" style="display:none;">
+      <div class="wip-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+        <!-- 1. 前置半成品組件 (Buffer 備料) -->
+        <div class="wip-box wip-in" style="padding: 10px 4px;">
+          <div class="wip-title" style="font-size:12px;">🧩 前置半成品</div>
+          <div class="wip-subtitle" style="font-size:11px;">組件備料 (套)</div>
+          <div class="wip-counter">
+            <button class="wip-btn btn-in" id="btnMinusSub">-</button>
+            <span class="wip-val" id="wipSubText" style="font-size:26px;">0</span>
+            <button class="wip-btn btn-in" id="btnPlusSub">+</button>
+          </div>
+        </div>
+        <!-- 2. 現場原生零件 (料盒庫存) -->
+        <div class="wip-box" style="background:#fffbeb; border:1px solid #fde68a; text-align:center; border-radius:12px; padding: 10px 4px;">
+          <div class="wip-title" id="mixedRawTitle" style="color:#b45309; font-size:12px; font-weight:bold;">📦 現場原生料</div>
+          <div class="wip-subtitle" id="mixedRawSubtitle" style="color:#d97706; font-size:11px;">零件庫存 (顆)</div>
+          <div class="wip-counter">
+            <button class="wip-btn" id="btnMinusRaw" style="background:#f59e0b;">-</button>
+            <span class="wip-val" id="wipRawText" style="font-size:26px; color:#b45309;">0</span>
+            <button class="wip-btn" id="btnPlusRaw" style="background:#f59e0b;">+</button>
+          </div>
+        </div>
+        <!-- 3. 站後已完成 -->
+        <div class="wip-box wip-out" style="padding: 10px 4px;">
+          <div class="wip-title" style="font-size:12px;">📤 站後已完成</div>
+          <div class="wip-subtitle" style="font-size:11px;">累計完工件數</div>
+          <div class="wip-counter" style="justify-content:center; min-height:40px;">
+            <span class="wip-val" id="wipOutTextMixed" style="font-size:26px; color:#059669;">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 齊套可開工總結標籤 -->
+      <div id="mixedKittingSummary" style="background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; padding:8px 12px; margin-top:10px; font-size:13px; font-weight:bold; color:#065f46; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+        <span>🟢 齊套可開工數：<b id="mixedKitCountText" style="font-size:18px; color:#047857;">0</b> 套</span>
+        <span id="mixedKitFormulaText" style="font-size:12px; color:#059669; font-weight:normal;">min(組件 0套, 零件 0顆)</span>
+      </div>
+    </div>
+
     <!-- 匯流工站齊套狀態卡 (若有前置站點則呈現各零件狀態) -->
     <div id="feederStatusCard" class="feeder-card" style="display:none;">
       <div class="feeder-title">
-        <span>🧩 前置工站產品庫存狀態（各需 1 件）：</span>
+        <span id="feederCardTitleText">🧩 前置半成品庫存狀態（各需 1 件）：</span>
         <span id="kitSummaryBadge" style="font-size:12px; font-weight:bold;"></span>
       </div>
       <div id="feederChips" class="feeder-chips-container">
@@ -227,7 +425,7 @@
   </div>
 
   <!-- 計時器與主操作 -->
-  <div class="card">
+  <div class="card" id="timerCard">
     <div class="timer-display" id="timerDisplay">00:00.0</div>
     <button class="main-btn btn-disabled" id="mainActionBtn" disabled>
       載入中...
@@ -235,8 +433,39 @@
     <div id="msg">連線中...</div>
   </div>
 
-  <!-- 本站生產紀錄 -->
-  <div class="card">
+  <!-- 📷 內置相機掃描開工/完工 (QR-Code 雙軌作業) -->
+  <div class="scanner-card" id="scannerCard">
+    <div class="scanner-header">
+      <div class="scanner-title">
+        <span>📷 相機 QR 碼掃描</span>
+        <span class="scan-badge" id="scanStatusBadge">鏡頭未啟動</span>
+      </div>
+      <button type="button" onclick="testAudioSound()" id="btnTestAudio" style="padding:4px 8px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1; background:#fff; color:#475569; cursor:pointer;" title="暺?皜祈岫?內?單?">?? ?單?皜祈岫</button>
+      <button type="button" onclick="openCooldownModal()" id="btnOpenCooldown" style="padding:4px 8px; font-size:12px; border-radius:6px; border:1px solid #cbd5e1; background:#fff; color:#475569; cursor:pointer;">⚙️ 防呆: <span id="cooldownBadge">3</span>s</button>
+      <button class="btn-scanner-toggle" id="btnToggleScanner" type="button">
+        ▶ 開啟相機
+      </button>
+    </div>
+
+    <!-- 掃描結果與防呆提示橫幅 -->
+    <div class="scan-tip-banner" id="scanTipBanner"></div>
+
+    <!-- 相機鏡頭預覽畫面 -->
+    <div class="scanner-viewport-box" id="scannerViewportBox" style="position: relative; cursor: pointer;">
+      <div id="qr-reader"></div>
+      <div id="scannerResumeHint" style="display:none; position:absolute; inset:0; background:rgba(15,23,42,0.85); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:15px; z-index:10;">
+        <span style="font-size:26px; margin-bottom:6px;">🔄</span>
+        <span style="font-size:14px; font-weight:bold;">畫面暫停中，點擊此處立即喚醒相機</span>
+      </div>
+    </div>
+
+    <!-- 操作指引說明 (僅保留防呆說明) -->
+    <div class="scan-guide-box">
+      <div>🛡️ <b>掃碼防呆機制</b>：開工僅限相機掃碼！開工未達冷卻秒數禁止完工，達設定秒數後掃描或點擊完工存檔。</div>
+    </div>
+  </div>
+
+  <div class="card" id="historyCard">
     <div class="history-title">
       <span>📋 本工站作業紀錄</span>
       <span style="font-size:12px; color:#64748b;" id="cycleTotalBadge">累計完成：0 件</span>
@@ -247,12 +476,13 @@
   </div>
 
 <script>
-const SUPABASE_URL = "https://iomsrjkrvuzrsluirtdj.supabase.co";
-const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
+const SUPABASE_URL = "https://fqbsrcbxtmagczykoesv.supabase.co";
+const SUPABASE_KEY = "sb_publishable_mn0CAB_nkrDycq6DS3Q2_g_-80SlWHB";
 
 const urlParams = new URLSearchParams(window.location.search);
 const groupId = (urlParams.get("group") || "G01").trim();
 const stationId = (urlParams.get("station") || "ST01").trim();
+const urlIsRoot = urlParams.get("is_root") === "1" || urlParams.get("is_root") === "true";
 
 // 🏷️ 取得生產料號：優先從 URL 參數 (?part=) 取得，若無則自動自本機快存 (localStorage) 讀取該組別與工站料號
 let partNo = (urlParams.get("part") || "").trim();
@@ -278,38 +508,166 @@ if (partNo) {
   partDisplayEl.style.color = "#94a3b8";
 }
 
-// 自動以完工數產生序號 (如 P01, P02, P03...)，無需人工輸入
+// 📦 檢查本工站是否包含現場原生零件 (例如零件 5)
+let hasRawPart = urlParams.get("has_raw") === "1" || urlParams.get("has_raw") === "true";
+let rawPartName = (urlParams.get("raw_name") || "").trim();
+let rawInitCount = parseInt(urlParams.get("raw_init") || "0", 10);
+
+// 📦 取得每件所需前置半成品套數 (預設每做 1 件需消耗前置半成品 1 套，開局庫存由 0 起算)
+let subInitCount = parseInt(urlParams.get("sub_init") || "", 10);
+if (isNaN(subInitCount)) {
+  try {
+    const allRaw = JSON.parse(localStorage.getItem("ie_chair_group_station_raw") || "{}");
+    const groupRaw = allRaw[groupId] || {};
+    const stRaw = groupRaw[stationId] || {};
+    if (stRaw.subInit !== undefined && stRaw.subInit !== null) {
+      subInitCount = stRaw.subInit;
+    }
+  } catch (e) {}
+}
+if (isNaN(subInitCount) || subInitCount <= 0) subInitCount = 1;
+
+if (!hasRawPart) {
+  try {
+    const allRaw = JSON.parse(localStorage.getItem("ie_chair_group_station_raw") || "{}");
+    const groupRaw = allRaw[groupId] || {};
+    const stRaw = groupRaw[stationId] || {};
+    if (stRaw.hasRaw || (stRaw.rawInit && stRaw.rawInit > 0)) {
+      hasRawPart = true;
+      rawPartName = stRaw.rawName || "";
+      rawInitCount = stRaw.rawInit !== undefined ? stRaw.rawInit : 0;
+    }
+  } catch (e) {}
+}
+
+if (hasRawPart) {
+  const customBadge = document.getElementById("customPartBadge");
+  const customText = document.getElementById("customPartText");
+  if (customBadge && customText) {
+    customBadge.style.display = "block";
+    const displayName = rawPartName || "站前可用物料";
+    customText.textContent = `${displayName} (初始備料: ${rawInitCount} 件)`;
+  }
+}
+
+// 🎯 實作輪次控制與防呆秒數
+let currentSystemMode = "TEST"; // TEST: 測試練習, OFFICIAL: 正式實作 (評分)
+let currentCooldownSec = 3;     // 掃描防呆冷卻秒數 (1~5 秒)
+let prevKitCount = null;        // 前次齊套數，用於偵測 0 -> >=1 觸發聲光提示
+let overtimeAlertPlayed = false;// 超時 5 分鐘警示防呆
+
+// 自動以完工數產生序號 (如 TEST-P01 或 P01)
 function getCurProductCode() {
-  return `P${String(currentOutWip + 1).padStart(2, '0')}`;
+  const seq = String(currentOutWip + 1).padStart(2, '0');
+  return currentSystemMode === "TEST" ? `TEST-P${seq}` : `P${seq}`;
 }
 
 let isRootStation = false;     // 是否為起點工站 (前無工作站)
 let feederStations = [];       // 前置工站清單 (如 ST02, ST04, ST06, ST07, ST08)
 let nextStationId = null;      // 下一站代號
-let stationType = "product_raw"; // 本站類型：product=只需前站產品；product_raw=前站產品＋現場原料
 
-let manualBufferWip = 0;       // 作業員手動設定的額外備料套數 (input_wip)
+let manualBufferWip = 0;       // 作業員手動設定的半成品組件備料 (input_wip)
 let currentOutWip = 0;         // 站後累計完工數 (output_wip)
 let wipRecordId = null;
 
+let rawPartStock = 10;         // 混合工站專屬原生零件料盒庫存 (顆)
+let rawWipRecordId = null;
+
+function isMixedStation() {
+  return hasRawPart && !isRootStation && feederStations.length > 0;
+}
+
 let feederDetails = [];        // 前置站庫存詳情 [{ station, avail, ok }]
 let kitCount = 0;              // 當前可齊套組裝數
-let kitCountAtStart = 0;       // 本次開工前可用套數（供完工紀錄）
+let snapWipBeforeStart = 0;    // 開工瞬間齊套數
 
 let isWorking = false;
 let startTime = null;
 let timerInterval = null;
 
+function updateModeBadgeUI() {
+  const mb = document.getElementById("modeBadge");
+  if (!mb) return;
+  if (currentSystemMode === "OFFICIAL") {
+    mb.innerHTML = "🏆 正式實作";
+    mb.style.background = "#fef3c7";
+    mb.style.color = "#b45309";
+    mb.style.borderColor = "#fde68a";
+  } else {
+    mb.innerHTML = "🧪 測試練習";
+    mb.style.background = "#f3e8ff";
+    mb.style.color = "#7e22ce";
+    mb.style.borderColor = "#d8b4fe";
+  }
+}
+
+function updateCooldownBadgeUI() {
+  const cb = document.getElementById("cooldownBadge");
+  if (cb) cb.textContent = currentCooldownSec;
+  for (let i = 1; i <= 5; i++) {
+    const btn = document.getElementById(`cdBtn_${i}`);
+    if (btn) {
+      if (i === currentCooldownSec) {
+        btn.style.background = "#2563eb";
+        btn.style.color = "#fff";
+        btn.style.borderColor = "#1d4ed8";
+      } else {
+        btn.style.background = "#fff";
+        btn.style.color = "#1e293b";
+        btn.style.borderColor = "#cbd5e1";
+      }
+    }
+  }
+}
+
+function openCooldownModal() {
+  const m = document.getElementById("cooldownModal");
+  if (m) {
+    updateCooldownBadgeUI();
+    m.style.display = "flex";
+  }
+}
+
+function closeCooldownModal() {
+  const m = document.getElementById("cooldownModal");
+  if (m) m.style.display = "none";
+}
+
+async function setTimerCooldown(sec) {
+  currentCooldownSec = sec;
+  updateCooldownBadgeUI();
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/station_wip?station_id=eq.SYSTEM_MODE`, {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ output_wip: sec, updated_at: new Date().toISOString() })
+    });
+  } catch(e) {}
+  showScanBanner(`🛡️ 掃碼防呆冷卻時間已設定為 ${sec} 秒`, "success", 2000);
+}
+
 // 初始化
 async function init() {
-  showMsg("同步全產線物料關係...", "#64748b");
+  showMsg("同步全產線物料關係與歷史資料...", "#64748b");
   try {
+    updateModeBadgeUI();
+    updateCooldownBadgeUI();
     await updateFlowInfo();
     await fetchWipData();
+    await autoSyncLive(); // 讀取全域 SYSTEM_MODE 與歷史
     await computeKitting();
-    showMsg("就緒，隨時可開始作業", "#10b981");
+    showMsg("就緒，請將鏡頭對準本站桌牌開工", "#10b981");
+
+    // 📷 自動啟動常駐相機 (全自動純掃碼模式，不需點擊按鈕)
+    setTimeout(() => {
+      restartCameraScanner(true);
+    }, 400);
 
     setInterval(autoSyncLive, 2000);
+    setInterval(updateScannerBadge, 400);
   } catch (err) {
     showMsg("初始化失敗：" + err.message, "#ef4444");
   }
@@ -323,43 +681,32 @@ async function updateFlowInfo() {
   );
   const flowData = await flowRes.json();
 
-  // 正規化工站代碼，避免資料庫內大小寫、不可見字元或特殊空白造成重複顯示。
-  const normalizeStationId = value => String(value || "")
-    .normalize("NFKC")
-    .replace(/[\u200B-\u200D\uFEFF]/g, "")
-    .replace(/[\s\u00A0]+/g, "")
-    .toUpperCase();
-  const currentStationKey = normalizeStationId(stationId);
+  feederStations = flowData
+    .filter(f => (f.next_station_id || "").trim() === stationId)
+    .map(f => f.station_id.trim());
 
-  // 前置來源只計算實際工站連線；同一來源站只保留一次。
-  const feederMap = new Map();
-  flowData.forEach(f => {
-    if (normalizeStationId(f.next_station_id) !== currentStationKey) return;
-    const sourceName = String(f.station_id || "").normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g, "").trim().toUpperCase();
-    const sourceKey = normalizeStationId(sourceName);
-    if (sourceKey && !feederMap.has(sourceKey)) feederMap.set(sourceKey, sourceName);
-  });
-  feederStations = [...feederMap.values()];
-
-  const myFlow = flowData.find(f => normalizeStationId(f.station_id) === currentStationKey);
-  nextStationId = myFlow && myFlow.next_station_id ? String(myFlow.next_station_id).normalize("NFKC").replace(/[\u200B-\u200D\uFEFF]/g, "").trim().toUpperCase() : null;
-  stationType = myFlow?.station_type || "product_raw";
+  const myFlow = flowData.find(f => (f.station_id || "").trim() === stationId);
+  nextStationId = myFlow && myFlow.next_station_id ? myFlow.next_station_id.trim() : null;
 
   const feederTextEl = document.getElementById("feederStationListText");
   const nextTextEl = document.getElementById("nextStationText");
 
   if (feederStations.length === 0) {
     isRootStation = true;
-    feederTextEl.textContent = "🟢 起點工站（無前置工站，需有現場原料）";
+    feederTextEl.textContent = "🟢 起點第一站（無前置工站，原料直接投入）";
     feederTextEl.style.color = "#16a34a";
-    document.getElementById("feederStatusCard").style.display = "block";
-    document.getElementById("inSubtitle").textContent = "現場原料可用套數";
+    document.getElementById("feederStatusCard").style.display = "none";
+    if (!hasRawPart) {
+      document.getElementById("inSubtitle").textContent = "現場零件庫存";
+    }
   } else {
     isRootStation = false;
     feederTextEl.textContent = `${feederStations.join(" + ")} (共 ${feederStations.length} 站)`;
     feederTextEl.style.color = "#2563eb";
     document.getElementById("feederStatusCard").style.display = "block";
-    document.getElementById("inSubtitle").textContent = "現場原料與前站物料皆足夠的可開工套數";
+    if (!hasRawPart) {
+      document.getElementById("inSubtitle").textContent = "可齊套組裝數";
+    }
   }
 
   if (nextStationId) {
@@ -373,6 +720,7 @@ async function updateFlowInfo() {
 
 // 讀取本站自己的 station_wip 紀錄
 async function fetchWipData() {
+  // 1. 讀取本站主要 station_wip
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${groupId}&station_id=eq.${stationId}&select=*`,
     { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
@@ -383,94 +731,185 @@ async function fetchWipData() {
     manualBufferWip = data[0].input_wip || 0;
     currentOutWip = data[0].output_wip || 0;
   } else {
+    const initialInput = 0;
     const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/station_wip`, {
       method: "POST",
       headers: {
         apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
         "Content-Type": "application/json", Prefer: "return=representation"
       },
-      body: JSON.stringify({ group_id: groupId, station_id: stationId, input_wip: 0, output_wip: 0 })
+      body: JSON.stringify({ group_id: groupId, station_id: stationId, input_wip: initialInput, output_wip: 0 })
     });
     const created = await insertRes.json();
     wipRecordId = created[0].id;
-    manualBufferWip = 0;
+    manualBufferWip = initialInput;
     currentOutWip = 0;
+  }
+
+  // 2. 若為含原生件之下游混合工站，讀取其專屬的原生零件庫存 row (${stationId}_RAW)
+  if (isMixedStation()) {
+    const rawStId = `${stationId}_RAW`;
+    const rawRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${groupId}&station_id=eq.${rawStId}&select=*`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
+    );
+    const rawData = await rawRes.json();
+    if (rawData.length > 0) {
+      rawWipRecordId = rawData[0].id;
+      rawPartStock = (rawData[0].input_wip !== null && rawData[0].input_wip !== undefined) ? rawData[0].input_wip : rawInitCount;
+    } else {
+      const insertRawRes = await fetch(`${SUPABASE_URL}/rest/v1/station_wip`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
+          "Content-Type": "application/json", Prefer: "return=representation"
+        },
+        body: JSON.stringify({ group_id: groupId, station_id: rawStId, input_wip: rawInitCount, output_wip: 0 })
+      });
+      const createdRaw = await insertRawRes.json();
+      rawWipRecordId = createdRaw[0].id;
+      rawPartStock = rawInitCount;
+    }
   }
 }
 
-// 🌟 核心計算：齊套約束（BOM 1:1）計算
+// 🌟 核心計算：萬能齊套約束（BOM 1:1）計算
 async function computeKitting() {
-  const rawMaterialAvail = Math.max(0, Number(manualBufferWip) || 0);
-
-  // 起始站沿用原始設定：原料假定充足，不以 input_wip 限制開工，也不扣現場原料庫存。
   if (isRootStation || feederStations.length === 0) {
-    feederDetails = [{ station: "現場原料", avail: "充足", ok: true }];
-    kitCount = 1; // 每次計時作業仍是一件／一套
+    kitCount = 9999;
+    window.currentTotalSub = 9999;
+    const becameReady = (prevKitCount === null || prevKitCount === 0) && !isWorking;
+    prevKitCount = kitCount;
+    if (becameReady) {
+      alertMaterialReady();
+      showScanBanner("🔔 起始工站原料充足！請掃描 QR Code 開始作業！", "success", 4000);
+    }
     refreshUiNumbers();
     return;
   }
 
-  // 中間站依設定判斷是否需要現場原料。
-  // 注意：現場原料是本站的獨立庫存，不是前置工站，因此絕不放進 feederDetails，
-  // 避免把「現場原料」顯示成額外來源站；此處只列實際連線的前置工站。
-  const needsRawMaterial = stationType === "product_raw";
-  feederDetails = [];
 
+  // 抓取全組 station_wip
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${encodeURIComponent(groupId)}&select=*`,
+    `${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${groupId}&select=*`,
     { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
   );
-  if (!res.ok) throw new Error("讀取工站庫存失敗，HTTP " + res.status);
-
   const allWips = await res.json();
   const wipMap = {};
-  allWips.forEach(w => { wipMap[(w.station_id || "").trim()] = w; });
+  allWips.forEach(w => {
+    wipMap[(w.station_id || "").trim()] = w;
+  });
 
-  // 本站完工數加上正在作業中已預留的一套，代表前站物料已被本站消耗／預留的數量。
-  // input_wip 是本站獨立現場原料，不可再加進每一個前站的 avail。
-  const consumed = (Number(currentOutWip) || 0) + (isWorking ? 1 : 0);
-  let minFeederAvail = Infinity;
+  // 本站累計已完工/開工總件數
+  const reqPerPiece = Math.max(1, subInitCount || 1);
+  const totalProducedOrWorking = currentOutWip + (isWorking ? 1 : 0);
+  // 手動補充備料剩餘可用數 與 實際自前置工站領取之消耗量 (絕不雙重扣減)
+  const remainingManualBuffer = Math.max(0, manualBufferWip - totalProducedOrWorking);
+  const feederConsumed = Math.max(0, totalProducedOrWorking - manualBufferWip) * reqPerPiece;
+
+  feederDetails = [];
+  let minFeederAvail = 999999;
 
   feederStations.forEach(fSt => {
     const fWip = wipMap[fSt] || { output_wip: 0 };
-    const fTotalOut = Math.max(0, Number(fWip.output_wip) || 0);
-    const avail = Math.max(0, fTotalOut - consumed);
-    feederDetails.push({ station: fSt, avail, ok: avail > 0 });
-    minFeederAvail = Math.min(minFeederAvail, avail);
+    const fTotalOut = fWip.output_wip || 0;
+    
+    // 前站半成品可用套數 = floor((前站累計產出 - 本站自前站實領消耗量) / 每件需求套數)
+    const avail = Math.floor(Math.max(0, fTotalOut - feederConsumed) / reqPerPiece);
+
+    feederDetails.push({
+      station: fSt,
+      avail: avail,
+      ok: avail > 0
+    });
+    if (avail < minFeederAvail) {
+      minFeederAvail = avail;
+    }
   });
 
-  kitCount = Math.min(
-    needsRawMaterial ? rawMaterialAvail : Infinity,
-    minFeederAvail === Infinity ? 0 : minFeederAvail
-  );
-  refreshUiNumbers();
-}
+  const feederKit = feederStations.length > 0 ? (minFeederAvail === 999999 ? 0 : minFeederAvail) : 0;
 
-// 本站現場原料是否不足（只作缺料提示，不當成前置工站）
-function rawMaterialMissing() {
-  return (Number(manualBufferWip) || 0) <= 0;
+  // 🌟 萬能齊套 (Option 2)：
+  // 1. 組件可用套數 = 前站半成品送達套數 (feederKit) + 剩餘手動補充備料 (remainingManualBuffer)
+  const totalSubassembly = feederKit + remainingManualBuffer;
+
+  // 2. 若為混合工站 (有前站 + 含原生零件)：需同時滿足「組件套數」與「原生零件庫存」
+  if (isMixedStation()) {
+    kitCount = Math.min(totalSubassembly, rawPartStock);
+  } else if (hasRawPart && isRootStation) {
+    kitCount = manualBufferWip;
+  } else {
+    kitCount = totalSubassembly;
+  }
+
+  window.currentFeederKit = feederKit;
+  window.currentTotalSub = totalSubassembly;
+
+  const becameReady = (prevKitCount === null || prevKitCount === 0) && kitCount > 0 && !isWorking;
+  prevKitCount = kitCount;
+  if (becameReady) {
+    alertMaterialReady();
+    showScanBanner("🔔 前站物料已送達（條件符合開工）！請掃描 QR Code 開始作業！", "success", 4000);
+  }
+
+  refreshUiNumbers();
 }
 
 // 刷新介面數字與按鈕狀態
 function refreshUiNumbers() {
-  document.getElementById("wipInText").textContent = kitCount;
-  document.getElementById("wipOutText").textContent = currentOutWip;
+  const mixed = isMixedStation();
+
+  if (mixed) {
+    document.getElementById("normalWipGrid").style.display = "none";
+    document.getElementById("mixedWipGrid").style.display = "block";
+
+    document.getElementById("wipSubText").textContent = manualBufferWip;
+    document.getElementById("wipRawText").textContent = rawPartStock;
+    document.getElementById("wipOutTextMixed").textContent = currentOutWip;
+
+    const totalSub = window.currentTotalSub ?? (manualBufferWip);
+    document.getElementById("mixedKitCountText").textContent = kitCount;
+    document.getElementById("mixedKitFormulaText").textContent = `min(組件 ${totalSub}套, 零件 ${rawPartStock}顆)`;
+    const rName = rawPartName || "站前可用物料";
+    document.getElementById("mixedRawTitle").innerHTML = `📦 站前可用物料`;
+    document.getElementById("mixedRawSubtitle").textContent = `${rName} 料盒庫存 (顆)`;
+    document.getElementById("manualHintText").innerHTML = `💡 提示：本站需組裝【前置組件】＋【${rName}】。可點擊 [+] [-] 分別調整半成品備料與零件庫存。每次完工兩者皆自動扣減 1 件。`;
+  } else {
+    document.getElementById("normalWipGrid").style.display = "grid";
+    document.getElementById("mixedWipGrid").style.display = "none";
+
+    if (isRootStation) {
+      const inTitle = document.getElementById("inTitle");
+      const inSub = document.getElementById("inSubtitle");
+      if (inTitle) inTitle.textContent = "📥 站前原料";
+      if (inSub) inSub.textContent = "原料狀態";
+      document.getElementById("wipInText").innerHTML = "<span style='color:#16a34a; font-size:24px; font-weight:bold;'>無限 ∞</span>";
+    } else {
+      const inTitle = document.getElementById("inTitle");
+      const inSub = document.getElementById("inSubtitle");
+      if (inTitle) inTitle.textContent = "📥 站前可用量";
+      if (inSub) inSub.textContent = "可齊套組裝數 (套)";
+      document.getElementById("wipInText").textContent = kitCount;
+    }
+    document.getElementById("wipOutText").textContent = currentOutWip;
+  }
+
   document.getElementById("cycleTotalBadge").textContent = `累計完成：${currentOutWip} 件`;
 
   // 渲染前置零件晶片
-  if (document.getElementById("feederChips")) {
+  if (!isRootStation && feederStations.length > 0) {
     const container = document.getElementById("feederChips");
     container.innerHTML = "";
     feederDetails.forEach(d => {
       const chip = document.createElement("span");
       chip.className = `feeder-chip ${d.ok ? 'chip-ok' : 'chip-empty'}`;
-      chip.innerHTML = `${d.station}: ${d.avail === "充足" ? "充足" : d.avail + (d.station === "現場原料" ? "套" : "件")} ${d.ok ? '✓' : '×'}`;
+      chip.innerHTML = `${d.station} 半成品: ${d.avail}件 ${d.ok ? '✓' : '×'}`;
       container.appendChild(chip);
     });
 
     const badge = document.getElementById("kitSummaryBadge");
     if (kitCount > 0) {
-      badge.textContent = `可組裝：${kitCount} 套`;
+      badge.textContent = `可開工組裝：${kitCount} 套`;
       badge.style.color = "#16a34a";
     } else {
       badge.textContent = `⚠️ 缺料 (可組裝 0 套)`;
@@ -478,31 +917,50 @@ function refreshUiNumbers() {
     }
   }
 
-  // 🌟 作業計時中：按鈕永遠是亮紅燈且「絕對可點擊停止」
+  // 🌟 作業計時中：按鈕永遠是亮紅燈且「可點擊停止」
   if (isWorking) {
     const btn = document.getElementById("mainActionBtn");
     btn.disabled = false;
     btn.className = "main-btn btn-finish";
+    btn.textContent = `■ 完成作業 (${getCurProductCode()})`;
     return;
   }
 
-  // 起始站原料假定充足；非起始站須確認現場原料與所有前站物料
-  if (!(isRootStation || feederStations.length === 0) && kitCount <= 0) {
+  // 🌟 非計時中：檢查是否為正式實作模式且已完成 1 次
+  if (currentSystemMode === "OFFICIAL" && currentOutWip >= 1) {
+    disableStartButton("🏆 正式實作已完成 1 件 (成績已鎖定)");
+    showMsg("🏆 本組正式實作評分數據已完整記錄！若需再次練習，請通知老師/管理員切換至測試模式。", "#b45309");
+    return;
+  }
+
+  // 1. 若為起點工站 (前無工作站)
+  // 1. 若為起點工站 (前無工作站，原料無限供應)
+  if (isRootStation) {
+    enableStartButton("📷 請掃描 QR Code 開工");
+    showMsg("🟢 起始工站（原料無限供應）：隨時可開工，請對準 QR Code 掃描！", "#10b981");
+    return;
+  }
+
+  // 2. 若為下游工站 (前面有工站)
+  if (kitCount <= 0) {
     const missing = feederDetails.filter(d => !d.ok).map(d => d.station);
-    if (stationType === "product_raw" && rawMaterialMissing()) missing.unshift("現場原料");
-    disableStartButton("⛔ 前置產品或現場原料不足");
-    showMsg(`⚠️ 缺料來源：[${missing.join(", ") || "前站產品"}]，請補料或等待前站完工。`, "#dc2626");
+    const reason = missing.length > 0 ? `缺料工站：[${missing.join(", ")}]` : "前置半成品未送達";
+    disableStartButton("⛔ 站前缺半成品組件 (0 套)");
+    showMsg(`⚠️ ${reason}，請等待前置工站完工送達或手動增加備料！`, "#dc2626");
   } else {
-    enableStartButton(`▶ 開始第 ${currentOutWip + 1} 次作業`);
-    showMsg(`✓ 物料齊全，可開始作業 ${kitCount} 套`, "#10b981");
+    enableStartButton("📷 請掃描 QR Code 開工");
+    showMsg(`✓ 物料齊全（可齊套 ${kitCount} 組），請對準 QR Code 掃描開工！`, "#10b981");
   }
 }
 
 function enableStartButton(text) {
   const btn = document.getElementById("mainActionBtn");
   btn.disabled = false;
-  btn.textContent = text;
-  btn.className = "main-btn btn-start";
+  btn.textContent = text || "📷 請掃描 QR Code 開工";
+  btn.className = "main-btn";
+  btn.style.background = "#2563eb";
+  btn.style.color = "#ffffff";
+  btn.style.cursor = "pointer";
 }
 
 function disableStartButton(text) {
@@ -510,42 +968,105 @@ function disableStartButton(text) {
   btn.disabled = true;
   btn.textContent = text;
   btn.className = "main-btn btn-disabled";
+  btn.style.background = "#94a3b8";
 }
 
-// 手動調整 WIP
+// 手動調整 WIP (半成品備料)
 async function updateWipDb(newIn, newOut) {
-  newIn = Math.max(0, Number(newIn) || 0);
-  newOut = Math.max(0, Number(newOut) || 0);
+  if (newIn < 0) newIn = 0;
+  if (newOut < 0) newOut = 0;
+  manualBufferWip = newIn;
+  currentOutWip = newOut;
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/station_wip?id=eq.${wipRecordId}`, {
+  await fetch(`${SUPABASE_URL}/rest/v1/station_wip?id=eq.${wipRecordId}`, {
     method: "PATCH",
     headers: {
       apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      input_wip: newIn,
-      output_wip: newOut,
+      input_wip: manualBufferWip,
+      output_wip: currentOutWip,
       updated_at: new Date().toISOString()
     })
   });
 
-  if (!res.ok) throw new Error("更新庫存失敗，HTTP " + res.status);
+  await computeKitting();
+}
 
-  // 確認資料庫更新成功後才改變前端狀態
-  manualBufferWip = newIn;
-  currentOutWip = newOut;
+// 手動調整原生零件庫存 (混合工站專用)
+async function updateRawDb(newRaw) {
+  if (newRaw < 0) newRaw = 0;
+  rawPartStock = newRaw;
+
+  if (rawWipRecordId) {
+    await fetch(`${SUPABASE_URL}/rest/v1/station_wip?id=eq.${rawWipRecordId}`, {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        input_wip: rawPartStock,
+        updated_at: new Date().toISOString()
+      })
+    });
+  }
+
   await computeKitting();
 }
 
 document.getElementById("btnPlusIn").onclick = () => updateWipDb(manualBufferWip + 1, currentOutWip);
-document.getElementById("btnMinusIn").onclick = () => updateWipDb(manualBufferWip - 1, currentOutWip);
+document.getElementById("btnMinusIn").onclick = () => {
+  if (manualBufferWip <= 0) return;
+  if (confirm(`確定要手動扣減 1 件站前在製品庫存嗎？（目前：${manualBufferWip} 件）`)) {
+    updateWipDb(manualBufferWip - 1, currentOutWip);
+  }
+};
 
-// 背景雙向即時同步 (每 2 秒輪詢前置站點 output_wip)
+document.getElementById("btnPlusSub").onclick = () => updateWipDb(manualBufferWip + 1, currentOutWip);
+document.getElementById("btnMinusSub").onclick = () => {
+  if (manualBufferWip <= 0) return;
+  if (confirm(`確定要手動扣減 1 套半成品庫存嗎？（目前：${manualBufferWip} 套）`)) {
+    updateWipDb(manualBufferWip - 1, currentOutWip);
+  }
+};
+
+document.getElementById("btnPlusRaw").onclick = () => updateRawDb(rawPartStock + 1);
+document.getElementById("btnMinusRaw").onclick = () => {
+  if (rawPartStock <= 0) return;
+  if (confirm(`確定要手動扣減 1 顆原生零件庫存嗎？（目前：${rawPartStock} 顆）`)) {
+    updateRawDb(rawPartStock - 1);
+  }
+};
+
+// 背景雙向即時同步 (每 2 秒輪詢前置站點庫存、全域模式與本站歷史紀錄)
 async function autoSyncLive() {
   if (!wipRecordId) return;
 
   try {
+    // 1. 同步雲端全域實作模式 (TEST / OFFICIAL) 與防呆秒數 (1~5s)
+    try {
+      const modeRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/station_wip?station_id=eq.SYSTEM_MODE&select=input_wip,output_wip`,
+        { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
+      );
+      const modeRows = await modeRes.json();
+      if (modeRows && modeRows.length > 0) {
+        const remoteMode = (modeRows[0].input_wip === 1) ? "OFFICIAL" : "TEST";
+        const remoteCooldown = modeRows[0].output_wip || 3;
+        if (remoteMode !== currentSystemMode) {
+          currentSystemMode = remoteMode;
+          updateModeBadgeUI();
+          if (!isWorking) await syncHistoryFromDb();
+        }
+        if (remoteCooldown !== currentCooldownSec) {
+          currentCooldownSec = remoteCooldown;
+          updateCooldownBadgeUI();
+        }
+      }
+    } catch(e) {}
+
     const wipRes = await fetch(
       `${SUPABASE_URL}/rest/v1/station_wip?id=eq.${wipRecordId}&select=input_wip,output_wip`,
       { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
@@ -553,139 +1074,862 @@ async function autoSyncLive() {
     const wipData = await wipRes.json();
     if (wipData.length > 0) {
       manualBufferWip = wipData[0].input_wip || 0;
-      currentOutWip = wipData[0].output_wip || 0;
     }
 
-    // 檢查後台是否一鍵清空重置
-    if (!isWorking && currentOutWip > 0) {
-      const eventRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/event?group_id=eq.${groupId}&station_id=eq.${stationId}&select=id`,
+    if (rawWipRecordId) {
+      const rawRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/station_wip?id=eq.${rawWipRecordId}&select=input_wip`,
         { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
       );
-      const evList = await eventRes.json();
-      if (evList.length === 0) {
-        currentOutWip = 0;
-        manualBufferWip = 0;
-        document.getElementById("historyList").innerHTML = `<div style="text-align:center; color:#94a3b8; padding: 10px;">後台已重置，準備新一輪競賽</div>`;
-        showMsg("✓ 後台已重置，可重新開跑！", "#10b981");
+      const rawData = await rawRes.json();
+      if (rawData.length > 0) {
+        rawPartStock = (rawData[0].input_wip !== null && rawData[0].input_wip !== undefined) ? rawData[0].input_wip : rawPartStock;
       }
+    }
+
+    // 若非計時中，同步雲端歷史事件紀錄 (確保重新整理、後台重置、多端同步時立即更新)
+    if (!isWorking) {
+      await syncHistoryFromDb();
     }
 
     await computeKitting();
   } catch(e) {}
 }
 
-// 主操作按鈕：開始 (齊套檢驗) / 完成 (完工計數 + 同步扣料)
+// ==========================================
+// 📷 內置相機 QR-Code 掃描與 5 秒防呆機制
+// ==========================================
+let html5QrCodeScanner = null;
+let isScannerRunning = false;
+let scanLockoutUntil = 0;      // 5秒防呆鎖定截止時間戳
+let scanCooldownUntil = 0;     // 完工後冷卻時間戳 (防止同一條碼連續重複誤觸)
+let lastDecodedText = "";
+let lastDecodedTime = 0;
+
+// ==========================================
+// 🔊 Web Audio API 全局音效引擎 (含手機瀏覽器解鎖與音量強化)
+// ==========================================
+let sharedAudioCtx = null;
+
+function getAudioContext() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return null;
+    if (!sharedAudioCtx) {
+      sharedAudioCtx = new AudioContext();
+    }
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume().catch(() => {});
+    }
+    return sharedAudioCtx;
+  } catch (e) {
+    return null;
+  }
+}
+
+// 🌟 點擊/觸控螢幕任一處立即解鎖手機瀏覽器音效播放限制
+['touchstart', 'touchend', 'pointerdown', 'mousedown', 'click'].forEach(evt => {
+  window.addEventListener(evt, () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+  }, { capture: true, passive: true });
+});
+
+// 手動音效測試
+function testAudioSound() {
+  playDingDongSound();
+  showScanBanner("🔊 提示音效播放測試 (若無聲請確認手機未開靜音模式)", "info", 2500);
+}
+
+// Web Audio API 提示音效 (START / FINISH / WARNING)
+async function playAudioFeedback(type) {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      await ctx.resume().catch(() => {});
+    }
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    if (type === "START") {
+      // 成功開工：清脆躍升雙音 (880Hz -> 1046.5Hz, 0.2s)
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1);
+      gain.gain.setValueAtTime(0.7, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } else if (type === "FINISH") {
+      // 成功完工：悅耳雙音和弦 (587.33Hz -> 880Hz, 0.3s)
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, now);
+      osc.frequency.setValueAtTime(880, now + 0.12);
+      gain.gain.setValueAtTime(0.75, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } else if (type === "WARNING") {
+      // 防呆攔截/警示：低沈短音 (220Hz, 0.25s)
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(220, now);
+      gain.gain.setValueAtTime(0.75, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    }
+  } catch (e) {
+    console.warn("音效播放提示:", e);
+  }
+}
+
+// 清脆悅耳的「叮咚～」上升和弦音效 (料足開工提示)
+async function playDingDongSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      await ctx.resume().catch(() => {});
+    }
+
+    const now = ctx.currentTime;
+    // 音符 1: E5 (659.25Hz)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = "sine";
+    osc1.frequency.setValueAtTime(659.25, now);
+    gain1.gain.setValueAtTime(0.7, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.35);
+
+    // 音符 2: A5 (880Hz) 叮～咚～
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(880, now + 0.18);
+    gain2.gain.setValueAtTime(0.75, now + 0.18);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.18);
+    osc2.stop(now + 0.65);
+  } catch (e) {
+    console.warn("DingDong sound error:", e);
+  }
+}
+
+// 🔔 料足聲光與震動提示 (新物料齊套瞬間觸發強烈脈衝)
+function alertMaterialReady() {
+  playDingDongSound();
+  try {
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 300]);
+  } catch(e) {}
+
+  const timerCard = document.getElementById("timerCard");
+  const scannerCard = document.getElementById("scannerCard");
+  if (timerCard) {
+    timerCard.classList.remove("pulse-green-active");
+    void timerCard.offsetWidth;
+    timerCard.classList.add("pulse-green-active");
+    setTimeout(() => { timerCard.classList.remove("pulse-green-active"); }, 4000);
+  }
+  if (scannerCard) {
+    scannerCard.classList.remove("pulse-green-active");
+    void scannerCard.offsetWidth;
+    scannerCard.classList.add("pulse-green-active");
+    setTimeout(() => { scannerCard.classList.remove("pulse-green-active"); }, 4000);
+  }
+}
+
+// 💡 全動態呼吸燈控制器 (防呆視覺回饋)
+function updateBreathingLight() {
+  const timerCard = document.getElementById("timerCard");
+  const scannerCard = document.getElementById("scannerCard");
+  if (!timerCard) return;
+
+  // 清除既有呼吸燈樣式
+  timerCard.classList.remove("breathing-green-ready", "breathing-blue-working", "breathing-yellow-locked");
+  if (scannerCard) {
+    scannerCard.classList.remove("breathing-green-ready", "breathing-blue-working", "breathing-yellow-locked");
+  }
+
+  const now = Date.now();
+
+  if (isWorking) {
+    if (now < scanLockoutUntil) {
+      // 1. 防呆鎖定保護中：黃色呼吸燈
+      timerCard.classList.add("breathing-yellow-locked");
+      if (scannerCard) scannerCard.classList.add("breathing-yellow-locked");
+    } else {
+      // 2. 作業進行中已可完工：藍色呼吸燈
+      timerCard.classList.add("breathing-blue-working");
+      if (scannerCard) scannerCard.classList.add("breathing-blue-working");
+    }
+  } else {
+    // 3. 待命狀態：若料足齊套（符合開工條件）：綠色呼吸燈常駐呼吸！
+    const canStart = (isRootStation || kitCount > 0);
+    if (canStart) {
+      timerCard.classList.add("breathing-green-ready");
+      if (scannerCard) scannerCard.classList.add("breathing-green-ready");
+    }
+  }
+}
+
+
+function showScanBanner(msg, type = "info", duration = 3000) {
+  const banner = document.getElementById("scanTipBanner");
+  if (!banner) return;
+  banner.style.display = "block";
+  banner.textContent = msg;
+
+  if (type === "success") {
+    banner.style.background = "#dcfce7";
+    banner.style.color = "#166534";
+    banner.style.border = "1px solid #86efac";
+  } else if (type === "warn" || type === "error") {
+    banner.style.background = "#fee2e2";
+    banner.style.color = "#991b1b";
+    banner.style.border = "1px solid #fca5a5";
+  } else {
+    banner.style.background = "#eff6ff";
+    banner.style.color = "#1e40af";
+    banner.style.border = "1px solid #bfdbfe";
+  }
+
+  if (window.scanBannerTimer) clearTimeout(window.scanBannerTimer);
+  if (duration > 0) {
+    window.scanBannerTimer = setTimeout(() => {
+      banner.style.display = "none";
+    }, duration);
+  }
+}
+
+// 即時更新掃描器狀態徽章 (包含 5 秒防呆即時倒數)
+// 即時更新掃描器與主按鈕狀態指示 (全自動純掃碼模式，不需點擊按鈕)
+function updateScannerBadge() {
+  updateBreathingLight();
+  const badge = document.getElementById("scanStatusBadge");
+  const mainBtn = document.getElementById("mainActionBtn");
+  const now = Date.now();
+
+  if (!isScannerRunning) {
+    if (badge) {
+      badge.textContent = "鏡頭待命中";
+      badge.className = "scan-badge";
+      badge.style.background = "#fef3c7";
+      badge.style.color = "#92400e";
+    }
+    if (mainBtn && !isWorking) {
+      mainBtn.textContent = `📷 點此開啟鏡頭（對準【${groupId}-${stationId}】桌牌開工）`;
+      mainBtn.className = "main-btn btn-start";
+      mainBtn.disabled = false;
+    }
+    return;
+  }
+
+  if (now < scanCooldownUntil) {
+    const remain = ((scanCooldownUntil - now) / 1000).toFixed(1);
+    if (badge) {
+      badge.textContent = `⏳ 完工冷卻中 (${remain}s)`;
+      badge.className = "scan-badge badge-cooldown";
+    }
+    if (mainBtn) {
+      mainBtn.textContent = `⏳ 完工冷卻中 (${remain}s) - 請移開桌牌`;
+      mainBtn.className = "main-btn btn-disabled";
+      mainBtn.disabled = true;
+    }
+    return;
+  }
+
+  if (isWorking) {
+    if (now < scanLockoutUntil) {
+      const remain = ((scanLockoutUntil - now) / 1000).toFixed(1);
+      if (badge) {
+        badge.textContent = `🛡️ 防呆鎖定中 (${remain}s)`;
+        badge.className = "scan-badge badge-locked";
+      }
+      if (mainBtn) {
+        mainBtn.textContent = `🛡️ 防呆鎖定中 (${remain}s) - 開工未滿 ${currentCooldownSec} 秒`;
+        mainBtn.className = "main-btn btn-disabled";
+        mainBtn.disabled = true;
+      }
+    } else {
+      if (badge) {
+        badge.textContent = "🟢 允許完工掃碼";
+        badge.className = "scan-badge badge-ready";
+      }
+      if (mainBtn) {
+        mainBtn.textContent = `⏹ 作業計時中 (${getCurProductCode()}) - 請對準桌牌掃碼完工`;
+        mainBtn.className = "main-btn btn-finish";
+        mainBtn.disabled = false;
+      }
+    }
+  } else {
+    if (badge) {
+      badge.textContent = "🟢 等候掃碼開工";
+      badge.className = "scan-badge badge-ready";
+    }
+    if (mainBtn) {
+      mainBtn.textContent = `📷 請將手機對準【${groupId} - ${stationId}】桌牌開工`;
+      mainBtn.className = "main-btn btn-start";
+      mainBtn.disabled = false;
+    }
+  }
+}
+
+// 統一開工邏輯 (純掃碼作業，不需點擊按鈕)
+async function handleStartWork(source = "SCAN") {
+  if (isWorking) return;
+
+  // 正式實作次數限制防呆 (只允許 1 次正式實作)
+  if (currentSystemMode === "OFFICIAL" && currentOutWip >= 1) {
+    playAudioFeedback("WARNING");
+    const tip = "🏆 本組正式實作已完成 1 件評分！成績已鎖定，不可重複開工。若需練習請由後台切換為測試練習。";
+    showMsg(tip, "#b45309");
+    showScanBanner(tip, "warn", 4000);
+    return;
+  }
+
+  // 下游工站缺料防呆 (起點站原料無限供應)
+  if (!isRootStation && kitCount <= 0) {
+    playAudioFeedback("WARNING");
+    const tip = "❌ 站前缺料或半成品未送達，禁止開始計時！請等待前站送料或補充備料。";
+    showMsg(tip, "#dc2626");
+    showScanBanner(tip, "error", 3500);
+    return;
+  }
+
+  isWorking = true;
+  snapWipBeforeStart = kitCount; // 鎖定開工瞬間齊套數
+  await computeKitting();
+
+  const prodId = getCurProductCode();
+  startTime = new Date();
+  scanLockoutUntil = Date.now() + (currentCooldownSec * 1000); // 🛡️ 動態掃碼防呆鎖定保護！
+
+  playAudioFeedback("START");
+  showScanBanner(`🟢 【掃碼開工成功】(${prodId}) 開始作業！完工請再次對準桌牌`, "success", 3000);
+  showMsg(`計時進行中... (${currentSystemMode === "TEST" ? "🧪測試練習" : "🏆正式實作"})`, "#10b981");
+
+  startTimer();
+  updateScannerBadge();
+}
+
+// 統一完工邏輯 (純掃碼作業，不需點擊按鈕)
+async function handleFinishWork(source = "SCAN") {
+  if (!isWorking) return;
+
+  const now = Date.now();
+  if (now < scanLockoutUntil) {
+    const remainSec = ((scanLockoutUntil - now) / 1000).toFixed(1);
+    playAudioFeedback("WARNING");
+    showScanBanner(`🛡️ 防呆保護中：開工未滿 ${currentCooldownSec} 秒禁止完工！(請再等候 ${remainSec} 秒)`, "warn", 2500);
+    showMsg(`🛡️ 防呆鎖定中，請等候 ${remainSec} 秒後再完成！`, "#dc2626");
+    updateScannerBadge();
+    return;
+  }
+
+  showMsg("完工紀錄中...", "#64748b");
+  clearInterval(timerInterval);
+
+  const finishTime = new Date();
+  const durationSec = Number(((finishTime - startTime) / 1000).toFixed(1));
+  const finishedProduct = getCurProductCode();
+  const nextOut = currentOutWip + 1;
+
+  try {
+    // 1. 本站完工數 + 1；保留 manualBufferWip 作為手動補充總數，由 currentOutWip 單一扣減，徹底防止雙重扣減
+    const nextIn = isRootStation ? 0 : manualBufferWip;
+    await updateWipDb(nextIn, nextOut);
+
+    // 2. 若為混合工站，扣減 1 顆原生零件 (rawPartStock - 1)
+    if (isMixedStation()) {
+      const nextRaw = Math.max(0, rawPartStock - 1);
+      await updateRawDb(nextRaw);
+    }
+
+    // 3. 一次性寫入 COMPLETED
+    await fetch(`${SUPABASE_URL}/rest/v1/event`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        group_id: groupId,
+        station_id: stationId,
+        product_id: finishedProduct,
+        start_time: startTime.toISOString(),
+        finish_time: finishTime.toISOString(),
+        duration_sec: durationSec,
+        status: "COMPLETED",
+        wip_before_start: snapWipBeforeStart,
+        wip_after_finish: nextOut
+      })
+    });
+
+    // 4. 立即自雲端資料庫重新同步歷史，確保序號與清單絕對精準
+    await syncHistoryFromDb();
+
+    isWorking = false;
+    document.getElementById("timerDisplay").textContent = "00:00.0";
+    await computeKitting();
+
+    // 5. 設定完工冷卻期 2.5 秒 (防止條碼尚未移開鏡頭造成立即重開工)
+    scanCooldownUntil = Date.now() + 2500;
+
+    playAudioFeedback("FINISH");
+    const finishMsg = `✓ 【掃碼完工】${finishedProduct} 完成！耗時 ${durationSec} 秒`;
+    showMsg(finishMsg, "#10b981");
+    showScanBanner(finishMsg, "success", 3000);
+    updateScannerBadge();
+
+    // 冷卻期結束自動恢復待命狀態
+    setTimeout(() => {
+      updateScannerBadge();
+    }, 2600);
+
+  } catch (err) {
+    showMsg("存檔失敗：" + err.message, "#ef4444");
+    showScanBanner("存檔失敗：" + err.message, "error", 4000);
+    playAudioFeedback("WARNING");
+  }
+}
+
+// 主操作按鈕：點擊輔助喚醒相機，不需作業員強制點擊
 const mainBtn = document.getElementById("mainActionBtn");
 mainBtn.addEventListener("click", async function() {
+  if (!isScannerRunning) {
+    toggleCameraScanner();
+    return;
+  }
   if (!isWorking) {
-    // --- 開始作業：起始站原料假定充足；中間站依 station_type 檢查與扣料 ---
-    await computeKitting();
-    if (kitCount <= 0) {
-      alert("❌ 前置產品或現場原料不足，禁止開始作業！");
-      return;
-    }
-
-    kitCountAtStart = kitCount;
-    const oldInputWip = manualBufferWip;
-    isWorking = true;
-
-    try {
-      // 起始站原料假定充足；只有設定為「前站產品＋現場原料」的中間站才扣料。
-      if (!(isRootStation || feederStations.length === 0) && stationType === "product_raw") {
-        await updateWipDb(oldInputWip - 1, currentOutWip);
-      }
-    } catch (err) {
-      isWorking = false;
-      await computeKitting();
-      alert("扣料失敗，無法開始作業：" + err.message);
-      return;
-    }
-
-    const prodId = getCurProductCode();
-    startTime = new Date();
-
-    mainBtn.disabled = false;
-    mainBtn.textContent = `■ 完成第 ${currentOutWip + 1} 件作業 (${prodId})`;
-    mainBtn.className = "main-btn btn-finish";
-    showMsg("計時進行中...", "#10b981");
-
-    startTimer();
+    showScanBanner(`📷 請將手機鏡頭對準本站【${groupId}-${stationId}】桌牌 QR Code 自動開工！`, "info", 3000);
   } else {
-    // --- 完成作業 ---
-    mainBtn.disabled = true;
-    showMsg("完工紀錄中...", "#64748b");
-    clearInterval(timerInterval);
-
-    const finishTime = new Date();
-    const durationSec = Math.round((finishTime - startTime) / 1000);
-    const finishedProduct = getCurProductCode();
-
-    try {
-      // 1. 原料已在開工時扣除；完工時只增加本站完工數
-      isWorking = false;
-      await updateWipDb(manualBufferWip, currentOutWip + 1);
-
-      // 2. 一次性寫入 COMPLETED
-      await fetch(`${SUPABASE_URL}/rest/v1/event`, {
-        method: "POST",
-        headers: {
-          apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          group_id: groupId,
-          station_id: stationId,
-          product_id: finishedProduct,
-          start_time: startTime.toISOString(),
-          finish_time: finishTime.toISOString(),
-          duration_sec: durationSec,
-          status: "COMPLETED",
-          wip_before_start: kitCountAtStart,
-          wip_after_finish: currentOutWip
-        })
-      });
-
-      addHistoryItem(currentOutWip, finishedProduct, durationSec, kitCountAtStart);
-
-      showMsg(`✓ 第 ${currentOutWip} 件完成！耗時 ${durationSec} 秒`, "#10b981");
-
-      isWorking = false;
-      document.getElementById("timerDisplay").textContent = "00:00.0";
-      
-      await computeKitting();
-    } catch (err) {
-      mainBtn.disabled = false;
-      showMsg("存檔失敗：" + err.message, "#ef4444");
+    const now = Date.now();
+    if (now < scanLockoutUntil) {
+      const remainSec = ((scanLockoutUntil - now) / 1000).toFixed(1);
+      playAudioFeedback("WARNING");
+      showScanBanner(`🛡️ 防呆保護中：開工未滿 ${currentCooldownSec} 秒禁止完工！(請再等候 ${remainSec} 秒)`, "warn", 2500);
+    } else {
+      await handleFinishWork("MANUAL");
     }
   }
 });
 
-function addHistoryItem(count, prod, sec, wip) {
-  const list = document.getElementById("historyList");
-  if (count === 1) list.innerHTML = "";
+// 雙軌模式 2：相機掃描控制器
+let isRestartingScanner = false;
+let scannerWasActiveBeforeHidden = false;
 
-  const item = document.createElement("div");
-  item.className = "history-item";
-  item.innerHTML = `
-    <span><strong>#${count}</strong> (${prod})</span>
-    <span>工時: <b>${sec}秒</b></span>
-    <span style="color:#64748b;">開工齊套數: ${wip}</span>
-  `;
-  list.insertBefore(item, list.firstChild);
+// 🌟 螢幕防休眠鎖定 (Screen Wake Lock API)：保證在 5 分鐘甚至整天的作業過程中，手機螢幕不會因閒置而自動黑屏熄滅
+let screenWakeLock = null;
+
+async function requestScreenWakeLock() {
+  try {
+    if ('wakeLock' in navigator && !screenWakeLock) {
+      screenWakeLock = await navigator.wakeLock.request('screen');
+      screenWakeLock.addEventListener('release', () => {
+        screenWakeLock = null;
+      });
+      console.log("螢幕常亮已鎖定，防止 5 分鐘作業期間手機自動休眠黑屏");
+    }
+  } catch (e) {
+    console.warn("無法取得螢幕鎖定:", e);
+  }
+}
+
+function releaseScreenWakeLock() {
+  if (screenWakeLock !== null) {
+    screenWakeLock.release().catch(() => {});
+    screenWakeLock = null;
+  }
+}
+
+// 重新啟動/喚醒相機串流 (解決手機切換分頁/跳出 App 後鏡頭變黑屏的問題)
+async function restartCameraScanner(silent = false) {
+  if (isRestartingScanner) return;
+  isRestartingScanner = true;
+
+  const viewportBox = document.getElementById("scannerViewportBox");
+  const resumeHint = document.getElementById("scannerResumeHint");
+  if (resumeHint) resumeHint.style.display = "none";
+
+  try {
+    if (!silent) showScanBanner("正在連接工站掃描鏡頭...", "info", 1500);
+
+    // 1. 安全關閉並清理舊實例
+    if (html5QrCodeScanner) {
+      try {
+        if (html5QrCodeScanner.isScanning) {
+          await html5QrCodeScanner.stop();
+        }
+      } catch (e) {
+        console.warn("停止舊相機串流:", e);
+      }
+      try {
+        html5QrCodeScanner.clear();
+      } catch (e) {}
+    }
+
+    // 2. 重新初始化並掛載相機 (全面支援 QR Code 與各種條碼)
+    const formatsToSupport = (typeof Html5QrcodeSupportedFormats !== "undefined") ? [
+      Html5QrcodeSupportedFormats.QR_CODE,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A
+    ] : undefined;
+
+    html5QrCodeScanner = new Html5Qrcode("qr-reader", formatsToSupport ? { formatsToSupport: formatsToSupport, verbose: false } : undefined);
+
+    const config = {
+      fps: 15,
+      qrbox: { width: 240, height: 240 },
+      aspectRatio: 1.0
+    };
+
+    await html5QrCodeScanner.start(
+      { facingMode: "environment" },
+      config,
+      onQrCodeScanned,
+      onQrScanError
+    );
+
+    isScannerRunning = true;
+    scannerWasActiveBeforeHidden = true;
+    if (viewportBox) viewportBox.style.display = "block";
+    const btn = document.getElementById("btnToggleScanner");
+    if (btn) {
+      btn.textContent = "⏹ 關閉相機";
+      btn.style.background = "#fee2e2";
+      btn.style.color = "#dc2626";
+    }
+    updateScannerBadge();
+    await requestScreenWakeLock();
+    if (!silent) showScanBanner(`📷 鏡頭就緒！請對準【${groupId}-${stationId}】桌牌掃描`, "success", 2500);
+
+  } catch (err) {
+    console.warn("自動重啟相機被瀏覽器政策暫停，顯示點擊喚醒按鈕:", err);
+    if (resumeHint) {
+      resumeHint.style.display = "flex";
+    }
+  } finally {
+    isRestartingScanner = false;
+  }
+}
+
+async function toggleCameraScanner() {
+  const btn = document.getElementById("btnToggleScanner");
+  const viewportBox = document.getElementById("scannerViewportBox");
+  const resumeHint = document.getElementById("scannerResumeHint");
+
+  if (isScannerRunning) {
+    // 關閉相機
+    try {
+      if (html5QrCodeScanner) {
+        if (html5QrCodeScanner.isScanning) {
+          await html5QrCodeScanner.stop();
+        }
+        html5QrCodeScanner.clear();
+      }
+    } catch (e) {
+      console.warn("停止相機時提示:", e);
+    }
+    isScannerRunning = false;
+    scannerWasActiveBeforeHidden = false;
+    releaseScreenWakeLock();
+    if (resumeHint) resumeHint.style.display = "none";
+    if (viewportBox) viewportBox.style.display = "none";
+    if (btn) {
+      btn.textContent = "▶ 開啟相機";
+      btn.style.background = "#eff6ff";
+      btn.style.color = "#2563eb";
+    }
+    updateScannerBadge();
+    showScanBanner("相機掃描已關閉", "info", 2000);
+  } else {
+    // 啟動相機
+    if (typeof Html5Qrcode === "undefined") {
+      alert("相機掃描套件尚未載入完成，請確認網路連線或重新整理頁面。");
+      return;
+    }
+    await restartCameraScanner(false);
+  }
+}
+
+// 掃描成功回呼 (含冷卻防呆) - 純掃碼直接觸發開工與完工
+async function onQrCodeScanned(decodedText, decodedResult) {
+  if (!decodedText) return;
+  const now = Date.now();
+
+  // 1. 完工後冷卻保護 (防止條碼未拿開造成立即連鎖開工)
+  if (now < scanCooldownUntil) {
+    return;
+  }
+
+  // 2. 影格防抖：同內容或 600ms 內不重複觸發
+  if (decodedText === lastDecodedText && (now - lastDecodedTime) < 600) {
+    return;
+  }
+  lastDecodedText = decodedText;
+  lastDecodedTime = now;
+
+  // 3. 工站與組別防呆檢驗
+  const validation = validateQrContent(decodedText);
+  if (!validation.valid) {
+    playAudioFeedback("WARNING");
+    showScanBanner(validation.reason, "error", 4000);
+    showMsg(validation.reason, "#dc2626");
+    return;
+  }
+
+  // 4. 判斷目前作業狀態 (開工 vs 完工) - 不須點擊按鈕，掃碼直接切換
+  if (!isWorking) {
+    await handleStartWork("SCAN");
+  } else {
+    await handleFinishWork("SCAN");
+  }
+}
+
+function onQrScanError(errorMessage) {
+  // 正常畫面持續掃描時忽略未偵測到條碼的訊號
+}
+
+// 工站與組別條碼內容防呆比對
+function validateQrContent(text) {
+  const raw = text.trim();
+
+  // 1. 偵測條碼中的組別 (支援 ?group=G03 或 獨立單字 G01~G12)
+  let detectedGrp = null;
+  const grpParamMatch = raw.match(/[?&]group=(G\d+)/i);
+  if (grpParamMatch) {
+    detectedGrp = grpParamMatch[1].toUpperCase();
+  } else {
+    const grpWordMatch = raw.match(/(?:^|[^a-zA-Z0-9])(G0[1-9]|G[1-9][0-9])(?:$|[^a-zA-Z0-9])/i);
+    if (grpWordMatch) {
+      detectedGrp = grpWordMatch[1].toUpperCase();
+    }
+  }
+
+  if (detectedGrp && detectedGrp !== groupId.toUpperCase()) {
+    return {
+      valid: false,
+      reason: `⛔ 跨組別條碼！掃到【${detectedGrp}】，但本手機為【${groupId}】，禁止跨組操作！`
+    };
+  }
+
+  // 2. 偵測條碼中的工站 (支援 &station=ST01 或 獨立單字 ST01~ST08)
+  let detectedSt = null;
+  const stParamMatch = raw.match(/[?&]station=(ST\d+)/i);
+  if (stParamMatch) {
+    detectedSt = stParamMatch[1].toUpperCase();
+  } else {
+    const stWordMatch = raw.match(/(?:^|[^a-zA-Z0-9])(ST0[1-8])(?:$|[^a-zA-Z0-9])/i);
+    if (stWordMatch) {
+      detectedSt = stWordMatch[1].toUpperCase();
+    }
+  }
+
+  if (detectedSt && detectedSt !== stationId.toUpperCase()) {
+    return {
+      valid: false,
+      reason: `⛔ 工站不符！掃到【${detectedSt}】，但本工站為【${stationId}】！請掃本站桌牌！`
+    };
+  }
+
+  return { valid: true, detectedGrp, detectedSt };
+}
+
+
+// 綁定相機啟動開關按鈕
+document.getElementById("btnToggleScanner").addEventListener("click", toggleCameraScanner);
+
+// 點擊畫面黑屏/預覽框時手動強制喚醒鏡頭 (應對 iOS Safari 手勢喚醒限制)
+const viewportEl = document.getElementById("scannerViewportBox");
+if (viewportEl) {
+  viewportEl.addEventListener("click", () => {
+    if (isScannerRunning) {
+      const video = document.querySelector("#qr-reader video");
+      const resumeHint = document.getElementById("scannerResumeHint");
+      const isDead = !video || video.paused || video.ended || (video.srcObject && !video.srcObject.active);
+      if (isDead || (resumeHint && resumeHint.style.display === "flex")) {
+        restartCameraScanner(false);
+      }
+    }
+  });
+}
+
+// 🌟 解決切換分頁/跳出 App 後黑屏：生命週期自動喚醒
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    if (isScannerRunning) {
+      scannerWasActiveBeforeHidden = true;
+    }
+  } else if (document.visibilityState === "visible") {
+    if (isScannerRunning || scannerWasActiveBeforeHidden) {
+      requestScreenWakeLock();
+      // 延遲 350ms 等候手機系統相機資源重新就緒後自動重連
+      setTimeout(() => {
+        restartCameraScanner(true);
+      }, 350);
+    }
+  }
+});
+
+window.addEventListener("pageshow", () => {
+  if (isScannerRunning || scannerWasActiveBeforeHidden) {
+    setTimeout(() => {
+      restartCameraScanner(true);
+    }, 350);
+  }
+});
+
+window.addEventListener("focus", () => {
+  if (isScannerRunning || scannerWasActiveBeforeHidden) {
+    setTimeout(() => {
+      const video = document.querySelector("#qr-reader video");
+      if (video && (video.paused || video.ended)) {
+        restartCameraScanner(true);
+      }
+    }, 350);
+  }
+});
+
+// 🌟 背景心跳檢測：每 2 秒檢查一次視訊串流是否處於中斷/黑屏狀態，若是則自動復原
+setInterval(() => {
+  if (isScannerRunning && !isRestartingScanner && document.visibilityState === "visible") {
+    const video = document.querySelector("#qr-reader video");
+    if (video) {
+      const isPaused = video.paused;
+      const isEnded = video.ended;
+      const isDead = video.srcObject && !video.srcObject.active;
+      if (isPaused || isEnded || isDead) {
+        console.warn("相機視訊串流中斷/黑屏，執行自動喚醒...");
+        restartCameraScanner(true);
+      }
+    }
+  }
+}, 2000);
+
+// 🌟 從資料庫雲端同步歷史紀錄 (徹底解決重整資料消失、序號重複、跳號缺漏問題)
+async function syncHistoryFromDb() {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/event?group_id=eq.${groupId}&station_id=eq.${stationId}&status=eq.COMPLETED&select=*&order=start_time.asc`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY } }
+    );
+    const events = await res.json();
+    if (!Array.isArray(events)) return;
+
+    // 嚴格依開始時間正序排序
+    events.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
+    // 依目前模式篩選本站完工數
+    const isTestMode = (currentSystemMode === "TEST");
+    const modeEvents = events.filter(e => {
+      const isTest = (e.product_id || "").startsWith("TEST-");
+      return isTestMode ? isTest : !isTest;
+    });
+
+    currentOutWip = modeEvents.length;
+    document.getElementById("wipOutText").textContent = currentOutWip;
+    document.getElementById("cycleTotalBadge").textContent = `${isTestMode ? "🧪 測試完成" : "🏆 正式完成"}：${currentOutWip} 件`;
+
+    const list = document.getElementById("historyList");
+    if (events.length === 0) {
+      list.innerHTML = `<div style="text-align:center; color:#94a3b8; padding: 10px;">尚未開始作業</div>`;
+      refreshUiNumbers();
+      return;
+    }
+
+    // 渲染歷史列表 (最新完工置頂)
+    list.innerHTML = "";
+    for (let i = events.length - 1; i >= 0; i--) {
+      const ev = events[i];
+      const seqNo = i + 1; // 依資料庫筆數嚴格編號 1, 2, 3, 4，絕不重複、絕不跳號
+      const prodCode = ev.product_id || `P${String(seqNo).padStart(2, '0')}`;
+      const sec = (ev.duration_sec !== null && ev.duration_sec !== undefined) ? Number(ev.duration_sec).toFixed(1) : "0.0";
+
+      let wipDisplay = ev.wip_before_start;
+      if (wipDisplay === 9999 || wipDisplay >= 999) {
+        wipDisplay = "9999";
+      } else if (wipDisplay === 0) {
+        wipDisplay = "0";
+      } else if (wipDisplay !== null && wipDisplay !== undefined) {
+        wipDisplay = `${wipDisplay}`;
+      } else {
+        wipDisplay = "-";
+      }
+
+      const isEvTest = (ev.product_id || "").startsWith("TEST-");
+      const tag = isEvTest
+        ? `<span style="font-size:11px; background:#f3e8ff; color:#7e22ce; padding:2px 6px; border-radius:4px; font-weight:bold;">🧪測試</span>`
+        : `<span style="font-size:11px; background:#fef3c7; color:#b45309; padding:2px 6px; border-radius:4px; font-weight:bold;">🏆正式</span>`;
+
+      const item = document.createElement("div");
+      item.className = "history-item";
+      item.innerHTML = `
+        <span>${tag} <strong>${prodCode}</strong></span>
+        <span>工時: <b>${sec}秒</b></span>
+        <span style="color:#64748b;">開工齊套數: ${wipDisplay}</span>
+      `;
+      list.appendChild(item);
+    }
+
+    refreshUiNumbers();
+  } catch (err) {
+    console.error("同步歷史紀錄異常:", err);
+  }
 }
 
 function startTimer() {
   const startMs = Date.now();
+  overtimeAlertPlayed = false;
+  if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(() => {
     const delta = Date.now() - startMs;
     const sec = Math.floor(delta / 1000);
     const ms = Math.floor((delta % 1000) / 100);
     const m = String(Math.floor(sec / 60)).padStart(2, '0');
     const s = String(sec % 60).padStart(2, '0');
-    document.getElementById("timerDisplay").textContent = `${m}:${s}.${ms}`;
+    const displayEl = document.getElementById("timerDisplay");
+    displayEl.textContent = `${m}:${s}.${ms}`;
+    
+    // ⚠️ 作業超時警示防呆：單件超過 5 分鐘 (300 秒) 提示作業員是否忘記完工
+    if (sec >= 300) {
+      displayEl.style.color = "#dc2626";
+      if (!overtimeAlertPlayed) {
+        overtimeAlertPlayed = true;
+        playAudioFeedback("WARNING");
+        showScanBanner("⚠️ 本件作業時間已逾 5 分鐘，請確認是否忘記掃碼/按鈕完工！", "warn", 6000);
+      }
+    } else {
+      displayEl.style.color = "#0f172a";
+    }
+
+    updateScannerBadge();
   }, 100);
 }
+
+// 🛡️ 瀏覽器離開防呆 (計時中離開或重整時二次確認)
+window.addEventListener("beforeunload", function (e) {
+  if (isWorking) {
+    e.preventDefault();
+    e.returnValue = "目前正在作業計時中，離開頁面將遺失本次作業數據，確定要離開嗎？";
+    return e.returnValue;
+  }
+});
 
 function showMsg(text, color) {
   const el = document.getElementById("msg");
@@ -695,5 +1939,24 @@ function showMsg(text, color) {
 
 init();
 </script>
+  <!-- 彈跳視窗：掃碼防呆冷卻秒數設定 -->
+  <div id="cooldownModal" style="display:none; position:fixed; z-index:999; inset:0; background:rgba(0,0,0,0.5); backdrop-filter:blur(2px); align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:14px; max-width:320px; width:90%; padding:20px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); margin:80px auto;">
+      <h3 style="margin-top:0;">🛡️ 掃描防呆冷卻時間</h3>
+      <p style="font-size:13px; color:#64748b; margin-bottom:15px;">
+        開工後未滿此秒數禁止完工，避免秒開秒關或連掃失誤。
+      </p>
+      <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:6px; margin-bottom:20px;">
+        <button type="button" class="cd-btn" onclick="setTimerCooldown(1)" id="cdBtn_1" style="padding:8px 0; font-size:13px; font-weight:bold; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;">1s</button>
+        <button type="button" class="cd-btn" onclick="setTimerCooldown(2)" id="cdBtn_2" style="padding:8px 0; font-size:13px; font-weight:bold; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;">2s</button>
+        <button type="button" class="cd-btn" onclick="setTimerCooldown(3)" id="cdBtn_3" style="padding:8px 0; font-size:13px; font-weight:bold; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;">3s</button>
+        <button type="button" class="cd-btn" onclick="setTimerCooldown(4)" id="cdBtn_4" style="padding:8px 0; font-size:13px; font-weight:bold; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;">4s</button>
+        <button type="button" class="cd-btn" onclick="setTimerCooldown(5)" id="cdBtn_5" style="padding:8px 0; font-size:13px; font-weight:bold; border-radius:6px; border:1px solid #cbd5e1; background:#fff; cursor:pointer;">5s</button>
+      </div>
+      <button type="button" onclick="closeCooldownModal()" style="width:100%; padding:10px; border-radius:8px; border:none; background:#2563eb; color:#fff; font-weight:bold; cursor:pointer;">
+        確定
+      </button>
+    </div>
+  </div>
 </body>
 </html>
