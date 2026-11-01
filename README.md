@@ -29,7 +29,9 @@ https://lctsaio365.github.io/ie_chair_test/工概螢幕.html
 
 IE Chair 工站 QR Code 產生器
 https://mrjohnny461-png.github.io/qr/qrcode.html
+
 IE Chair 工站同步計時器
 https://mrjohnny461-png.github.io/qr/timer.html
+
 IE Chair 組裝線即時監控中心
 https://mrjohnny461-png.github.io/qr/工蓋螢幕.htm
