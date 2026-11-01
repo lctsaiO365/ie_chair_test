@@ -97,7 +97,7 @@
     <div class="form-group">
       <label>計時頁面網址 (Base URL，已永久固定)：</label>
       <input type="text" id="baseUrl" class="readonly-input"
-             value="https://lctsaio365.github.io/ie_chair_test/qrcode.html"
+             value="https://mrjohnny461-png.github.io/qr/timer.html"
              readonly disabled>
       <span style="font-size:12px; color:#64748b;">🔒 此網址已永久鎖定，所有產生的 QR Code 皆會導向此處。</span>
     </div>
@@ -200,9 +200,9 @@
 
 <script>
   // 永久固定網址與雲端資料庫常數
-  const FIXED_BASE_URL = "https://lctsaio365.github.io/ie_chair_test/timer.html";
-  const SUPABASE_URL = "https://iomsrjkrvuzrsluirtdj.supabase.co";
-const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
+  const FIXED_BASE_URL = "https://mrjohnny461-png.github.io/qr/timer.html";
+  const SUPABASE_URL = "https://fqbsrcbxtmagczykoesv.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
 
   let currentFullUrl = "";
   const ALL_STATIONS = ["ST01", "ST02", "ST03", "ST04", "ST05", "ST06", "ST07", "ST08"];
@@ -247,6 +247,28 @@ const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
   function saveAllGroupStationParts(data) {
     localStorage.setItem("ie_chair_group_station_parts", JSON.stringify(data));
   }
+
+  // 🧹 自動清除舊版殘留之預設零件設定 (如「零件5 / 4顆」)，確保預設皆為不勾選且無預設值
+  (function cleanLegacyRawDefaults() {
+    try {
+      if (!localStorage.getItem("ie_chair_raw_clean_v3")) {
+        const all = JSON.parse(localStorage.getItem("ie_chair_group_station_raw") || "{}");
+        Object.keys(all).forEach(g => {
+          if (all[g] && typeof all[g] === "object") {
+            Object.keys(all[g]).forEach(st => {
+              if (all[g][st] && typeof all[g][st] === "object") {
+                all[g][st].hasRaw = false;
+                all[g][st].rawName = "";
+                all[g][st].rawInit = "";
+              }
+            });
+          }
+        });
+        localStorage.setItem("ie_chair_group_station_raw", JSON.stringify(all));
+        localStorage.setItem("ie_chair_raw_clean_v3", "1");
+      }
+    } catch(e) {}
+  })();
 
   // 讀取所有組別各工站的原生零件設定
   function getAllGroupRawConfigs() {
@@ -415,10 +437,10 @@ const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
       const partVal = curParts[st] || "";
 
       const stRaw = curRaw[st] || {};
-      const subInitVal = (stRaw.subInit !== undefined && stRaw.subInit !== null) ? stRaw.subInit : (isRoot ? 0 : 1);
-      const hasRaw = !!(stRaw.hasRaw || (stRaw.rawInit && stRaw.rawInit > 0));
-      const rawName = stRaw.rawName || "";
-      const rawInit = (stRaw.rawInit !== undefined && stRaw.rawInit !== null) ? stRaw.rawInit : "";
+      const subInitVal = (stRaw.subInit !== undefined && stRaw.subInit !== null) ? Math.max(0, parseInt(stRaw.subInit, 10) || 0) : 0;
+      const hasRaw = (stRaw.hasRaw === true);
+      const rawName = (hasRaw && stRaw.rawName !== undefined && stRaw.rawName !== null) ? String(stRaw.rawName) : "";
+      const rawInit = (hasRaw && stRaw.rawInit !== undefined && stRaw.rawInit !== null && stRaw.rawInit !== "") ? stRaw.rawInit : "";
 
       const card = document.createElement("div");
       card.className = "station-part-card";
@@ -445,7 +467,7 @@ const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
               需前置工站：${preds.length > 0 ? preds.join(" + ") : "前站"}
             </div>
             <div style="display:flex; align-items:center; gap:6px; background:#fffbeb; padding:6px 8px; border-radius:6px; border:1px solid #fef08a;">
-              <span style="font-size:12px; font-weight:bold; color:#92400e; white-space:nowrap;">📦 強制設定需要多少半成品：</span>
+              <span style="font-size:12px; font-weight:bold; color:#92400e; white-space:nowrap;">📦 站前半成品初始備料（選填，可為 0）：</span>
               <div style="display:inline-flex; align-items:center; background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:0 4px;">
                 <input type="number" class="station-sub-init" data-station="${st}" value="${subInitVal}" min="0" ${isLocked ? 'readonly' : ''} style="border:none; outline:none; width:36px; padding:2px 0; font-size:12px; text-align:right; font-weight:bold; color:#1e40af; background:${isLocked ? '#e2e8f0' : '#fff'};">
                 <span style="font-size:11px; font-weight:bold; color:#92400e; margin-left:2px;">套</span>
@@ -460,10 +482,10 @@ const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
             </div>
             <div class="raw-config-box" id="rawBox_${st}" style="display:${hasRaw ? 'flex' : 'none'}; gap:4px; align-items:center; background:#f8fafc; padding:4px 8px; border-radius:6px; border:1px solid #e2e8f0;">
               <span style="font-size:11px; color:#64748b; font-weight:bold; white-space:nowrap;">名稱:</span>
-              <input type="text" class="station-raw-name" data-station="${st}" value="${rawName}" placeholder="名稱 (如:螺絲)" ${isLocked ? 'readonly' : ''} style="padding:2px 6px; font-size:11px; flex:2; border:1px solid #cbd5e1; border-radius:4px; background:${isLocked ? '#e2e8f0' : '#fff'};">
+              <input type="text" class="station-raw-name" data-station="${st}" value="${rawName}" placeholder="" ${isLocked ? 'readonly' : ''} style="padding:2px 6px; font-size:11px; flex:2; border:1px solid #cbd5e1; border-radius:4px; background:${isLocked ? '#e2e8f0' : '#fff'};">
               <span style="font-size:11px; color:#64748b; font-weight:bold; white-space:nowrap;">備料:</span>
               <div style="display:inline-flex; align-items:center; background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:0 4px;">
-                <input type="number" class="station-raw-init" data-station="${st}" value="${rawInit}" placeholder="0" min="0" ${isLocked ? 'readonly' : ''} style="border:none; outline:none; padding:2px 0; font-size:11px; width:30px; text-align:right; background:${isLocked ? '#e2e8f0' : '#fff'};">
+                <input type="number" class="station-raw-init" data-station="${st}" value="${rawInit}" placeholder="" min="0" ${isLocked ? 'readonly' : ''} style="border:none; outline:none; padding:2px 0; font-size:11px; width:36px; text-align:right; background:${isLocked ? '#e2e8f0' : '#fff'};">
                 <span style="font-size:10px; font-weight:bold; color:#64748b; margin-left:2px;">顆</span>
               </div>
             </div>
@@ -481,8 +503,15 @@ const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
 
       const chk = card.querySelector(`#rawCheck_${st}`);
       const box = card.querySelector(`#rawBox_${st}`);
+      const nameInp = card.querySelector(`.station-raw-name`);
+      const initInp = card.querySelector(`.station-raw-init`);
       if (chk && box) {
-        chk.onchange = function() { box.style.display = this.checked ? "flex" : "none"; };
+        chk.onchange = function() {
+          box.style.display = this.checked ? "flex" : "none";
+          // 勾選或取消勾選時皆不自動帶入任何預設值，保持空白讓使用者自行輸入
+          if (nameInp) nameInp.value = "";
+          if (initInp) initInp.value = "";
+        };
       }
 
       grid.appendChild(card);
@@ -547,19 +576,20 @@ const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
       const isRoot = preds.length === 0;
 
       const subInp = document.querySelector(`.station-sub-init[data-station="${st}"]`);
-      const subInitVal = (!isRoot && subInp) ? (parseInt(subInp.value, 10) || 0) : (isRoot ? 0 : 1);
+      const subInitVal = (!isRoot && subInp && subInp.value !== '') ? Math.max(0, parseInt(subInp.value, 10) || 0) : 0;
 
       const check = document.getElementById(`rawCheck_${st}`);
       const nameInput = document.querySelector(`.station-raw-name[data-station="${st}"]`);
       const initInput = document.querySelector(`.station-raw-init[data-station="${st}"]`);
 
       const hasRaw = check ? check.checked : false;
+      const rawInitStr = (hasRaw && initInput) ? initInput.value.trim() : "";
       configs[st] = {
         isRoot: isRoot,
         subInit: isRoot ? 0 : subInitVal,
         hasRaw: hasRaw,
         rawName: (hasRaw && nameInput) ? nameInput.value.trim() : "",
-        rawInit: (hasRaw && initInput && initInput.value !== "") ? parseInt(initInput.value, 10) : 0
+        rawInit: rawInitStr !== "" ? (parseInt(rawInitStr, 10) || 0) : ""
       };
     });
     return configs;
@@ -660,7 +690,7 @@ const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
       params.set("is_root", "1");
       rawTagHtml = ` <span style='font-size:12px; color:#15803d; background:#dcfce7; border:1px solid #86efac; padding:2px 8px; border-radius:6px; font-weight:bold;'>🏁 起始工站 ｜ 🟢 原料無限供應 ∞</span>`;
     } else {
-      const subInit = rawCfg.subInit !== undefined ? rawCfg.subInit : 1;
+      const subInit = rawCfg.subInit !== undefined ? rawCfg.subInit : 0;
       params.set("sub_init", subInit);
       const hasRaw = !!(rawCfg.hasRaw || (rawCfg.rawInit && rawCfg.rawInit > 0));
       if (hasRaw) {
@@ -670,7 +700,7 @@ const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
           params.set("raw_init", rawCfg.rawInit);
         }
       }
-      rawTagHtml = ` <span style='font-size:12px; color:#92400e; background:#fef3c7; border:1px solid #fde68a; padding:2px 8px; border-radius:6px; font-weight:bold;'>📦 每件需前置半成品: ${subInit}套${hasRaw && rawCfg.rawName ? ` ｜ ${rawCfg.rawName}: ${rawCfg.rawInit || 0}顆` : ''}</span>`;
+      rawTagHtml = ` <span style='font-size:12px; color:#92400e; background:#fef3c7; border:1px solid #fde68a; padding:2px 8px; border-radius:6px; font-weight:bold;'>📦 站前半成品初始備料: ${subInit}套${hasRaw && rawCfg.rawName ? ` ｜ ${rawCfg.rawName}: ${rawCfg.rawInit || 0}顆` : ''}</span>`;
     }
 
     currentFullUrl = `${FIXED_BASE_URL}?${params.toString()}`;
@@ -746,7 +776,7 @@ const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
         params.set("is_root", "1");
         tagHtml = `<div style="font-size:11px; font-weight:bold; color:#15803d; background:#dcfce7; border:1px solid #86efac; padding:3px 6px; border-radius:4px; margin-bottom:6px;">🏁 起始工站 ｜ 🟢 原料無限供應 ∞</div>`;
       } else {
-        const subInit = rawCfg.subInit !== undefined ? rawCfg.subInit : 1;
+        const subInit = rawCfg.subInit !== undefined ? rawCfg.subInit : 0;
         params.set("sub_init", subInit);
         const hasRaw = !!(rawCfg.hasRaw || (rawCfg.rawInit && rawCfg.rawInit > 0));
         if (hasRaw) {
@@ -756,7 +786,7 @@ const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
             params.set("raw_init", rawCfg.rawInit);
           }
         }
-        tagHtml = `<div style="font-size:11px; font-weight:bold; color:#92400e; background:#fef3c7; border:1px solid #fde68a; padding:3px 6px; border-radius:4px; margin-bottom:6px;">📦 每件需前置半成品: ${subInit} 套${hasRaw && rawCfg.rawName ? `<br>＋ ${rawCfg.rawName}: ${rawCfg.rawInit || 0} 顆` : ''}</div>`;
+        tagHtml = `<div style="font-size:11px; font-weight:bold; color:#92400e; background:#fef3c7; border:1px solid #fde68a; padding:3px 6px; border-radius:4px; margin-bottom:6px;">📦 站前半成品初始備料: ${subInit} 套${hasRaw && rawCfg.rawName ? `<br>＋ ${rawCfg.rawName}: ${rawCfg.rawInit || 0} 顆` : ''}</div>`;
       }
 
       const url = `${FIXED_BASE_URL}?${params.toString()}`;
