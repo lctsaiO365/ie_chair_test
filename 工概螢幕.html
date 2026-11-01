@@ -141,24 +141,54 @@
       <button id="modeTestBtn" onclick="changeSystemMode(0)" style="padding:4px 10px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #93c5fd; background:#eff6ff; color:#1d4ed8; cursor:pointer;" title="點擊切換為測試練習模式">
         🧪 測試練習
       </button>
-      <button id="modeOfficialBtn" onclick="changeSystemMode(1)" style="padding:4px 10px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #cbd5e1; background:#fff; color:#64748b; cursor:pointer;" title="點擊切換為正式實作評分模式">
+      <!-- 🧪 測試組數 (第 1~10 次) 選單與確認按鈕 (學生可直接選擇並確認) -->
+      <span id="testRoundBox" style="display:inline-flex; align-items:center; gap:4px; background:#f3e8ff; padding:2px 8px; border-radius:6px; border:1px solid #d8b4fe;">
+        <span style="font-size:12px; color:#6b21a8; font-weight:bold;">測試組數:</span>
+        <select id="testRoundSelect" style="padding:2px 6px; font-size:12px; font-weight:bold; color:#6b21a8; border-radius:4px; border:1px solid #c084fc; background:#fff; cursor:pointer;">
+          <option value="1">第 1 次測試</option>
+          <option value="2">第 2 次測試</option>
+          <option value="3">第 3 次測試</option>
+          <option value="4">第 4 次測試</option>
+          <option value="5">第 5 次測試</option>
+          <option value="6">第 6 次測試</option>
+          <option value="7">第 7 次測試</option>
+          <option value="8">第 8 次測試</option>
+          <option value="9">第 9 次測試</option>
+          <option value="10">第 10 次測試</option>
+        </select>
+        <button id="confirmTestRoundBtn" type="button" onclick="confirmTestRound()" style="padding:2px 8px; font-size:12px; font-weight:bold; border-radius:4px; border:1px solid #7e22ce; background:#9333ea; color:#fff; cursor:pointer;" title="學生可選擇第幾次測試並點擊確認">
+          ✅ 確認
+        </button>
+      </span>
+      <button id="modeOfficialBtn" onclick="changeSystemMode(1)" style="padding:4px 10px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #cbd5e1; background:#fff; color:#64748b; cursor:pointer;" title="點擊切換為正式實作評分模式（需管理員授權）">
         🏆 正式實作 (評分)
       </button>
-      <span style="border-left:1px solid #cbd5e1; height:18px; margin:0 4px;"></span>
-      <span style="font-size:12px; color:#475569; font-weight:bold;">🛡️ 掃碼防呆:</span>
-      <select id="systemCooldownSelect" onchange="changeSystemCooldown(this.value)" style="padding:2px 6px; font-size:12px; border-radius:4px; border:1px solid #cbd5e1; background:#fff;">
-        <option value="1">1 秒</option>
-        <option value="2">2 秒</option>
-        <option value="3" selected>3 秒</option>
-        <option value="4">4 秒</option>
-        <option value="5">5 秒</option>
-      </select>
     </div>
 
     <div id="adminControlsArea" style="display:flex; align-items:center; gap:8px; margin-left:auto; flex-wrap:wrap;">
-      <button id="adminToggleBtn" onclick="toggleAdmin()" style="padding:6px 14px; font-size:13px; font-weight:bold; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" title="點擊解鎖管理員以啟用清空與自訂功能">
+      <button id="adminToggleBtn" onclick="toggleAdmin()" style="padding:6px 14px; font-size:13px; font-weight:bold; border-radius:8px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;" title="點擊解鎖管理員以啟用防呆秒數設定、清空與自訂功能">
         🔒 現場看板模式 (點擊解鎖管理)
       </button>
+      <!-- 🛡️ 管理員專屬：開工防呆與完工冷卻/起始間隔設定 (整合自手機計時器，僅管理員可改) -->
+      <div id="adminCooldownBox" style="display:none; align-items:center; gap:6px; background:#eff6ff; padding:4px 10px; border-radius:8px; border:1px solid #93c5fd;">
+        <span style="font-size:12px; color:#1e40af; font-weight:bold;">🛡️ 開工防呆:</span>
+        <select id="systemCooldownSelect" onchange="changeSystemCooldown()" style="padding:2px 6px; font-size:12px; font-weight:bold; color:#1e40af; border-radius:4px; border:1px solid #93c5fd; background:#fff; cursor:pointer;" title="開工後未滿此秒數禁止完工（僅管理員可更改）">
+          <option value="1">1 秒</option>
+          <option value="2">2 秒</option>
+          <option value="3" selected>3 秒</option>
+          <option value="4">4 秒</option>
+          <option value="5">5 秒</option>
+        </select>
+        <span style="border-left:1px solid #93c5fd; height:14px; margin:0 2px;"></span>
+        <span style="font-size:12px; color:#065f46; font-weight:bold;">⏳ 完工冷卻/起始間隔:</span>
+        <select id="systemFinishCooldownSelect" onchange="changeSystemCooldown()" style="padding:2px 6px; font-size:12px; font-weight:bold; color:#065f46; border-radius:4px; border:1px solid #6ee7b7; background:#fff; cursor:pointer;" title="掃描完工後冷卻秒數，同時作為起始站第2件起之到料提示間隔（3~5秒，僅管理員可更改）">
+          <option value="1">1 秒</option>
+          <option value="2">2 秒</option>
+          <option value="3">3 秒</option>
+          <option value="4" selected>4 秒</option>
+          <option value="5">5 秒</option>
+        </select>
+      </div>
       <button id="changePinBtn" onclick="changeAdminPin()" style="display:none; padding:6px 10px; font-size:12px; border-radius:8px; border:1px solid #cbd5e1; background:#fff; color:#475569; cursor:pointer;" title="變更管理員密碼">
         ⚙️ 改密碼
       </button>
@@ -243,6 +273,19 @@
         <button id="filterTestBtn" onclick="setTableFilter('TEST')" style="padding:4px 10px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #cbd5e1; background:#fff; color:#7e22ce; cursor:pointer;">
           🧪 僅看測試 (<span id="countTest">0</span>)
         </button>
+        <select id="filterTestRoundSelect" onchange="setTestRoundTableFilter(this.value)" style="padding:3px 8px; font-size:12px; font-weight:bold; border-radius:6px; border:1px solid #d8b4fe; background:#faf5ff; color:#6b21a8; cursor:pointer;" title="選擇檢視特定第幾次測試的統計與明細">
+          <option value="ALL_TEST">🔍 測試場次：全部測試 (1~10次)</option>
+          <option value="1">🧪 僅看：第 1 次測試</option>
+          <option value="2">🧪 僅看：第 2 次測試</option>
+          <option value="3">🧪 僅看：第 3 次測試</option>
+          <option value="4">🧪 僅看：第 4 次測試</option>
+          <option value="5">🧪 僅看：第 5 次測試</option>
+          <option value="6">🧪 僅看：第 6 次測試</option>
+          <option value="7">🧪 僅看：第 7 次測試</option>
+          <option value="8">🧪 僅看：第 8 次測試</option>
+          <option value="9">🧪 僅看：第 9 次測試</option>
+          <option value="10">🧪 僅看：第 10 次測試</option>
+        </select>
       </div>
     </div>
     <table id="dataTable">
@@ -300,7 +343,7 @@
   </div>
 
 <script>
-const SUPABASE_URL = "https://iomsrjkrvuzrsluirtdj.supabase.co";
+const SUPABASE_URL = "https://fqbsrcbxtmagczykoesv.supabase.co";
 const SUPABASE_KEY = "sb_publishable_QmLToEOs4wEEPBnASz0dxg_o0hhtgLO";
 
 mermaid.initialize({ startOnLoad: false, theme: 'neutral' });
@@ -323,6 +366,28 @@ function getStationPart(group, station) {
   return "";
 }
 
+// 🧹 自動清除舊版殘留之預設零件設定 (如「零件5 / 4顆」)，確保預設皆為不勾選且無預設值
+(function cleanLegacyRawDefaults() {
+  try {
+    if (!localStorage.getItem("ie_chair_raw_clean_v3")) {
+      const all = JSON.parse(localStorage.getItem("ie_chair_group_station_raw") || "{}");
+      Object.keys(all).forEach(g => {
+        if (all[g] && typeof all[g] === "object") {
+          Object.keys(all[g]).forEach(st => {
+            if (all[g][st] && typeof all[g][st] === "object") {
+              all[g][st].hasRaw = false;
+              all[g][st].rawName = "";
+              all[g][st].rawInit = "";
+            }
+          });
+        }
+      });
+      localStorage.setItem("ie_chair_group_station_raw", JSON.stringify(all));
+      localStorage.setItem("ie_chair_raw_clean_v3", "1");
+    }
+  } catch(e) {}
+})();
+
 // 📦 讀取各組別與各工站之原生零件與前置半成品設定
 function getStationRaw(group, station) {
   try {
@@ -331,7 +396,7 @@ function getStationRaw(group, station) {
       return all[group][station];
     }
   } catch(e) {}
-  return { hasRaw: false };
+  return { hasRaw: false, rawName: "", rawInit: "" };
 }
 
 window.addEventListener("load", () => {
@@ -400,16 +465,65 @@ document.getElementById("refreshIntervalSelect").onchange = function() {
 };
 
 // 🔐 權限管理系統 (預設為「現場看板唯讀模式」，解鎖後切換為「管理員模式」)
-// 🎯 實作輪次控制 (0: 測試練習, 1: 正式實作) 與 掃描防呆冷卻秒數
+// 🎯 實作輪次控制 (0: 測試練習 [支援第 1~10 次測試], 1: 正式實作) 與 掃描防呆/完工冷卻秒數
 let currentSystemMode = 0; // 0=TEST, 1=OFFICIAL
-let currentCooldownSec = 3; // 1~5 秒
+let currentTestRound = parseInt(localStorage.getItem("ie_chair_test_round") || "1", 10) || 1; // 1~10 次測試
+let currentCooldownSec = parseInt(localStorage.getItem("ie_chair_cooldown_sec") || "3", 10) || 3; // 開工防呆 1~5 秒
+let currentFinishCooldownSec = parseInt(localStorage.getItem("ie_chair_finish_cooldown_sec") || "4", 10) || 4; // 完工冷卻/起始間隔 1~5 秒 (預設 4 秒，即 3~5 秒)
 let currentTableFilter = "ALL"; // ALL, OFFICIAL, TEST
+let currentTestRoundFilter = "ALL_TEST"; // ALL_TEST, or "1"~"10"
+
+// 編碼與解碼 SYSTEM_MODE 雲端欄位 (input_wip: 1=正式, 101~110=第1~10次測試; output_wip: 開工防呆*100 + 完工冷卻)
+function encodeSystemModeInput(mode, round) {
+  return mode === 1 ? 1 : (100 + Math.min(10, Math.max(1, parseInt(round, 10) || 1)));
+}
+function decodeSystemModeInput(val) {
+  const n = parseInt(val, 10) || 0;
+  if (n === 1) return { mode: 1, round: currentTestRound };
+  if (n >= 101 && n <= 110) return { mode: 0, round: n - 100 };
+  return { mode: 0, round: 1 };
+}
+function encodeSystemCooldownOutput(startCd, finishCd) {
+  const s = Math.min(5, Math.max(1, parseInt(startCd, 10) || 3));
+  const f = Math.min(5, Math.max(1, parseInt(finishCd, 10) || 4));
+  return s * 100 + f;
+}
+function decodeSystemCooldownOutput(val) {
+  const n = parseInt(val, 10) || 304;
+  if (n >= 100) {
+    const s = Math.min(5, Math.max(1, Math.floor(n / 100)));
+    const f = Math.min(5, Math.max(1, n % 100));
+    return { startCd: s, finishCd: f };
+  }
+  return { startCd: Math.min(5, Math.max(1, n)), finishCd: currentFinishCooldownSec || 4 };
+}
+
+// 判斷 product_id 是否為測試紀錄，以及屬於第幾次測試 (1~10)
+function isTestProductId(pid) {
+  const s = (pid || "").trim().toUpperCase();
+  return s.startsWith("TEST");
+}
+function getTestRoundFromProductId(pid) {
+  const s = (pid || "").trim().toUpperCase();
+  const m = s.match(/^TEST(\d+)-/);
+  if (m) return parseInt(m[1], 10);
+  if (s.startsWith("TEST-")) return 1; // 舊版 TEST-P01 歸為第 1 次測試
+  return null;
+}
 
 function updateModeButtonsUI() {
   const testBtn = document.getElementById("modeTestBtn");
   const officialBtn = document.getElementById("modeOfficialBtn");
+  const roundSelect = document.getElementById("testRoundSelect");
+  const testRoundBox = document.getElementById("testRoundBox");
   const cdSelect = document.getElementById("systemCooldownSelect");
+  const fcdSelect = document.getElementById("systemFinishCooldownSelect");
+
   if (cdSelect) cdSelect.value = currentCooldownSec;
+  if (fcdSelect) fcdSelect.value = currentFinishCooldownSec;
+  if (roundSelect && document.activeElement !== roundSelect) {
+    roundSelect.value = currentTestRound;
+  }
 
   if (currentSystemMode === 1) {
     if (officialBtn) {
@@ -421,44 +535,127 @@ function updateModeButtonsUI() {
       testBtn.style.background = "#fff";
       testBtn.style.color = "#64748b";
       testBtn.style.borderColor = "#cbd5e1";
+      testBtn.textContent = `🧪 測試練習`;
     }
+    if (testRoundBox) testRoundBox.style.opacity = "0.65";
   } else {
     if (testBtn) {
       testBtn.style.background = "#eff6ff";
       testBtn.style.color = "#1d4ed8";
       testBtn.style.borderColor = "#93c5fd";
+      testBtn.textContent = `🧪 測試練習 (目前：第 ${currentTestRound} 次)`;
     }
     if (officialBtn) {
       officialBtn.style.background = "#fff";
       officialBtn.style.color = "#64748b";
       officialBtn.style.borderColor = "#cbd5e1";
     }
+    if (testRoundBox) testRoundBox.style.opacity = "1";
   }
 }
 
-async function changeSystemMode(newMode) {
-  if (!isAdminLoggedIn) {
-    alert("⚠️ 權限不足：切換實作模式需管理員權限！請先解鎖管理員。");
+// 重置指定組別的 station_wip 在製品庫存 (回到初始設定備料 subInit / rawInit，保留歷史 event 數據)
+async function resetGroupWipForNewRound(group) {
+  if (!group || group === "ALL") return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${encodeURIComponent(group)}`, {
+      method: "PATCH",
+      headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ input_wip: 0, output_wip: 0, updated_at: new Date().toISOString() })
+    });
+    const allRaw = JSON.parse(localStorage.getItem("ie_chair_group_station_raw") || "{}");
+    const groupRaw = allRaw[group] || {};
+    for (const [stKey, cfg] of Object.entries(groupRaw)) {
+      if (!cfg) continue;
+      const initSub = (!cfg.isRoot && cfg.subInit !== undefined && cfg.subInit !== null)
+        ? Math.max(0, parseInt(cfg.subInit, 10) || 0)
+        : 0;
+      await fetch(`${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${encodeURIComponent(group)}&station_id=eq.${encodeURIComponent(stKey)}`, {
+        method: "PATCH",
+        headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ input_wip: initSub, output_wip: 0, updated_at: new Date().toISOString() })
+      });
+      if (cfg.hasRaw) {
+        const initRaw = Math.max(0, parseInt(cfg.rawInit, 10) || 0);
+        await fetch(`${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${encodeURIComponent(group)}&station_id=eq.${encodeURIComponent(stKey + "_RAW")}`, {
+          method: "PATCH",
+          headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ input_wip: initRaw, output_wip: 0, updated_at: new Date().toISOString() })
+        });
+      }
+    }
+  } catch (e) {}
+}
+
+// 學生可直接選擇第 1~10 次測試並點擊「✅ 確認」
+async function confirmTestRound() {
+  const roundSelect = document.getElementById("testRoundSelect");
+  const selectedRound = Math.min(10, Math.max(1, parseInt(roundSelect ? roundSelect.value : "1", 10) || 1));
+  const group = document.getElementById("groupSelect").value;
+
+  const ok = confirm(`🧪 確定要切換並確認為【第 ${selectedRound} 次測試】嗎？\n\n• 確認後，各工站手機將同步切換至「第 ${selectedRound} 次測試 (TEST${selectedRound}-P01...)」。\n• 本組在製品庫存將自動歸零並恢復初始備料，讓第 ${selectedRound} 次測試從 0 開始計時（先前各次測試的歷史紀錄均完整保留）！`);
+  if (!ok) {
+    if (roundSelect) roundSelect.value = currentTestRound;
     return;
   }
-  resetAutoLock();
+
+  currentSystemMode = 0;
+  currentTestRound = selectedRound;
+  localStorage.setItem("ie_chair_system_mode", "0");
+  localStorage.setItem("ie_chair_test_round", String(selectedRound));
+  updateModeButtonsUI();
+
+  if (group !== "ALL") {
+    await resetGroupWipForNewRound(group);
+  }
+
+  // 同步寫入雲端 SYSTEM_MODE
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/station_wip?station_id=eq.SYSTEM_MODE`, {
+      method: "PATCH",
+      headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input_wip: encodeSystemModeInput(0, currentTestRound),
+        output_wip: encodeSystemCooldownOutput(currentCooldownSec, currentFinishCooldownSec),
+        updated_at: new Date().toISOString()
+      })
+    });
+  } catch(e) {}
+
+  // 自動將下方表格篩選切至該次測試，方便學生即時確認該次測試資料
+  const filterSelect = document.getElementById("filterTestRoundSelect");
+  if (filterSelect) {
+    filterSelect.value = String(selectedRound);
+    setTestRoundTableFilter(String(selectedRound));
+  }
+
+  alert(`✓ 已確認切換為【🧪 第 ${selectedRound} 次測試】！各工站手機與在製品庫存已同步就緒。`);
+  loadAll();
+}
+
+async function changeSystemMode(newMode) {
+  if (newMode === 1 && !isAdminLoggedIn) {
+    alert("⚠️ 權限不足：切換為【🏆 正式實作 (評分)】需管理員權限！請先解鎖管理員。\n（若要切換第 1~10 次測試，請直接於選單選擇後點擊「✅ 確認」）");
+    return;
+  }
+  if (isAdminLoggedIn) resetAutoLock();
 
   const group = document.getElementById("groupSelect").value;
   if (newMode === 1) {
-    const ok = confirm("⚠️ 即將切換至【🏆 正式實作評分模式】！\n\n現場各工站手機將同步切入正式計分實作。\n建議點擊「確定」自動將當前在製品庫存歸零起跑（測試數據將完整保留，不受影響）；點擊「取消」保留目前在庫。");
+    const ok = confirm("⚠️ 即將切換至【🏆 正式實作評分模式】！\n\n現場各工站手機將同步切入正式計分實作。\n建議點擊「確定」自動將當前在製品庫存歸零並恢復初始備料起跑（測試數據將完整保留，不受影響）；點擊「取消」保留目前在庫。");
     if (ok && group !== "ALL") {
-      try {
-        await fetch(`${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${encodeURIComponent(group)}`, {
-          method: "PATCH",
-          headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ input_wip: 0, output_wip: 0, updated_at: new Date().toISOString() })
-        });
-      } catch(e) {}
+      await resetGroupWipForNewRound(group);
+    }
+  } else {
+    const roundSelect = document.getElementById("testRoundSelect");
+    if (roundSelect) {
+      currentTestRound = Math.min(10, Math.max(1, parseInt(roundSelect.value, 10) || currentTestRound));
     }
   }
 
   currentSystemMode = newMode;
   localStorage.setItem("ie_chair_system_mode", newMode);
+  localStorage.setItem("ie_chair_test_round", String(currentTestRound));
   updateModeButtonsUI();
 
   // 同步更新雲端 station_wip SYSTEM_MODE
@@ -466,30 +663,55 @@ async function changeSystemMode(newMode) {
     await fetch(`${SUPABASE_URL}/rest/v1/station_wip?station_id=eq.SYSTEM_MODE`, {
       method: "PATCH",
       headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ input_wip: newMode, output_wip: currentCooldownSec, updated_at: new Date().toISOString() })
+      body: JSON.stringify({
+        input_wip: encodeSystemModeInput(newMode, currentTestRound),
+        output_wip: encodeSystemCooldownOutput(currentCooldownSec, currentFinishCooldownSec),
+        updated_at: new Date().toISOString()
+      })
     });
   } catch(e) {}
 
-  alert(`✓ 已成功切換為【${newMode === 1 ? '🏆 正式實作 (評分)' : '🧪 測試練習'}】！現場手機端已同步。`);
+  alert(`✓ 已成功切換為【${newMode === 1 ? '🏆 正式實作 (評分)' : `🧪 測試練習 (第 ${currentTestRound} 次測試)`}】！現場手機端已同步。`);
   loadAll();
 }
 
-async function changeSystemCooldown(sec) {
-  currentCooldownSec = parseInt(sec, 10) || 3;
-  localStorage.setItem("ie_chair_cooldown_sec", currentCooldownSec);
-  if (isAdminLoggedIn) {
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/station_wip?station_id=eq.SYSTEM_MODE`, {
-        method: "PATCH",
-        headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ input_wip: currentSystemMode, output_wip: currentCooldownSec, updated_at: new Date().toISOString() })
-      });
-    } catch(e) {}
+// 管理員專屬：修改開工防呆秒數與完工冷卻/起始間隔秒數
+async function changeSystemCooldown() {
+  if (!isAdminLoggedIn) {
+    alert("⚠️ 權限不足：防呆與冷卻時間僅限管理員修改！");
+    updateModeButtonsUI();
+    return;
   }
+  resetAutoLock();
+
+  const cdSelect = document.getElementById("systemCooldownSelect");
+  const fcdSelect = document.getElementById("systemFinishCooldownSelect");
+  currentCooldownSec = Math.min(5, Math.max(1, parseInt(cdSelect ? cdSelect.value : "3", 10) || 3));
+  currentFinishCooldownSec = Math.min(5, Math.max(1, parseInt(fcdSelect ? fcdSelect.value : "4", 10) || 4));
+
+  localStorage.setItem("ie_chair_cooldown_sec", String(currentCooldownSec));
+  localStorage.setItem("ie_chair_finish_cooldown_sec", String(currentFinishCooldownSec));
+
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/station_wip?station_id=eq.SYSTEM_MODE`, {
+      method: "PATCH",
+      headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        input_wip: encodeSystemModeInput(currentSystemMode, currentTestRound),
+        output_wip: encodeSystemCooldownOutput(currentCooldownSec, currentFinishCooldownSec),
+        updated_at: new Date().toISOString()
+      })
+    });
+  } catch(e) {}
 }
 
 function setTableFilter(filter) {
   currentTableFilter = filter;
+  if (filter !== "TEST") {
+    const sel = document.getElementById("filterTestRoundSelect");
+    if (sel) sel.value = "ALL_TEST";
+    currentTestRoundFilter = "ALL_TEST";
+  }
   const btns = {
     ALL: document.getElementById("filterAllBtn"),
     OFFICIAL: document.getElementById("filterOfficialBtn"),
@@ -511,6 +733,32 @@ function setTableFilter(filter) {
   showStats(currentEvents);
 }
 
+function setTestRoundTableFilter(val) {
+  currentTestRoundFilter = val || "ALL_TEST";
+  if (currentTestRoundFilter !== "ALL_TEST") {
+    currentTableFilter = "TEST";
+    const btns = {
+      ALL: document.getElementById("filterAllBtn"),
+      OFFICIAL: document.getElementById("filterOfficialBtn"),
+      TEST: document.getElementById("filterTestBtn")
+    };
+    Object.keys(btns).forEach(k => {
+      if (!btns[k]) return;
+      if (k === "TEST") {
+        btns[k].style.background = '#f3e8ff';
+        btns[k].style.color = '#7e22ce';
+        btns[k].style.borderColor = '#d8b4fe';
+      } else {
+        btns[k].style.background = "#fff";
+        btns[k].style.color = "#64748b";
+        btns[k].style.borderColor = "#cbd5e1";
+      }
+    });
+  }
+  showTable(currentEvents);
+  showStats(currentEvents);
+}
+
 const ADMIN_PIN_KEY = "ie_chair_admin_pin";
 const DEFAULT_PIN = "1688";
 let isAdminLoggedIn = false;
@@ -522,6 +770,7 @@ function getAdminPin() {
 
 function updateAdminUI() {
   const adminToggleBtn = document.getElementById("adminToggleBtn");
+  const adminCooldownBox = document.getElementById("adminCooldownBox");
   const changePinBtn = document.getElementById("changePinBtn");
   const openFlowEditorBtn = document.getElementById("openFlowEditorBtn");
   const deleteAllBtn = document.getElementById("deleteAllBtn");
@@ -536,6 +785,7 @@ function updateAdminUI() {
       adminToggleBtn.style.color = "#1d4ed8";
       adminToggleBtn.style.borderColor = "#93c5fd";
     }
+    if (adminCooldownBox) adminCooldownBox.style.display = "inline-flex";
     if (changePinBtn) changePinBtn.style.display = "inline-flex";
     if (openFlowEditorBtn) openFlowEditorBtn.style.display = "inline-flex";
     if (deleteAllBtn) deleteAllBtn.style.display = "inline-flex";
@@ -549,6 +799,7 @@ function updateAdminUI() {
       adminToggleBtn.style.color = "#334155";
       adminToggleBtn.style.borderColor = "#cbd5e1";
     }
+    if (adminCooldownBox) adminCooldownBox.style.display = "none";
     if (changePinBtn) changePinBtn.style.display = "none";
     if (openFlowEditorBtn) openFlowEditorBtn.style.display = "none";
     if (deleteAllBtn) deleteAllBtn.style.display = "none";
@@ -674,6 +925,31 @@ document.getElementById("deleteAllBtn").onclick = async () => {
       });
     }
 
+    // 重置後若該組工站有設定初始半成品備料 (subInit) 或專屬零件 (rawInit)，自動同步寫入雲端
+    try {
+      const allRaw = JSON.parse(localStorage.getItem("ie_chair_group_station_raw") || "{}");
+      const groupRaw = allRaw[group] || {};
+      for (const [stKey, cfg] of Object.entries(groupRaw)) {
+        if (!cfg) continue;
+        const initSub = (!cfg.isRoot && cfg.subInit !== undefined && cfg.subInit !== null)
+          ? Math.max(0, parseInt(cfg.subInit, 10) || 0)
+          : 0;
+        await fetch(`${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${encodeURIComponent(group)}&station_id=eq.${encodeURIComponent(stKey)}`, {
+          method: "PATCH",
+          headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ input_wip: initSub, output_wip: 0, updated_at: new Date().toISOString() })
+        });
+        if (cfg.hasRaw) {
+          const initRaw = Math.max(0, parseInt(cfg.rawInit, 10) || 0);
+          await fetch(`${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${encodeURIComponent(group)}&station_id=eq.${encodeURIComponent(stKey + "_RAW")}`, {
+            method: "PATCH",
+            headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
+            body: JSON.stringify({ input_wip: initRaw, output_wip: 0, updated_at: new Date().toISOString() })
+          });
+        }
+      }
+    } catch (e) {}
+
     alert(`✓ 【${group}】的生產紀錄已全數清空，庫存已全部歸零重置！各工站作業員可開始新一輪競賽。`);
     loadAll();
   } catch (err) {
@@ -709,8 +985,12 @@ async function loadAll() {
       });
       const modeRows = await modeRes.json();
       if (modeRows && modeRows.length > 0) {
-        currentSystemMode = modeRows[0].input_wip || 0;
-        currentCooldownSec = modeRows[0].output_wip || 3;
+        const decodedMode = decodeSystemModeInput(modeRows[0].input_wip);
+        currentSystemMode = decodedMode.mode;
+        currentTestRound = decodedMode.round;
+        const decodedCd = decodeSystemCooldownOutput(modeRows[0].output_wip);
+        currentCooldownSec = decodedCd.startCd;
+        currentFinishCooldownSec = decodedCd.finishCd;
         updateModeButtonsUI();
       }
     } catch(e) {}
@@ -823,15 +1103,28 @@ async function renderFlowDiagram(group) {
       .map(f => (f.next_station_id || "").trim())
       .filter(Boolean);
 
-    // 1. 計算【站前可用量 / 齊套數】(嚴格依前置工站完工產出與需求套數計算，開局為 0 等待前站完工)
+    // 1. 計算【站前可用量 / 齊套數】(支援初始半成品備料可為 0 或任意套數，設定後立即生效並防止雙重扣減)
     const isRoot = predecessors.length === 0;
     const isMerge = predecessors.length > 1;
     let inQty = 0;
     let feederKit = 0;
-    const reqPerPiece = Math.max(1, rawCfg.subInit || 1);
-    const manualAdded = w.inWip || 0;
+    const hasCfgSub = (!isRoot && rawCfg.subInit !== undefined && rawCfg.subInit !== null);
+    const cfgSub = hasCfgSub ? Math.max(0, parseInt(rawCfg.subInit, 10) || 0) : 0;
+    const manualAdded = (!isRoot && w.outWip === 0 && hasCfgSub)
+      ? cfgSub
+      : Math.max(w.inWip || 0, cfgSub);
+
+    // 若尚未開工且雲端 input_wip 與設定值不同，自動背景同步至雲端資料庫
+    if (!isRoot && w.outWip === 0 && hasCfgSub && (w.inWip || 0) !== cfgSub) {
+      fetch(`${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${encodeURIComponent(group)}&station_id=eq.${encodeURIComponent(stId)}`, {
+        method: "PATCH",
+        headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ input_wip: cfgSub, updated_at: new Date().toISOString() })
+      }).catch(() => {});
+    }
+
     const remainingManualBuffer = Math.max(0, manualAdded - w.outWip);
-    const feederConsumed = Math.max(0, w.outWip - manualAdded) * reqPerPiece;
+    const feederConsumed = Math.max(0, w.outWip - manualAdded);
 
     let totalSub = remainingManualBuffer;
     let rawStock = 0;
@@ -842,7 +1135,7 @@ async function renderFlowDiagram(group) {
       let minAvail = 999999;
       predecessors.forEach(p => {
         const pOut = wipMap[p]?.outWip || 0;
-        const avail = Math.floor(Math.max(0, pOut - feederConsumed) / reqPerPiece);
+        const avail = Math.max(0, pOut - feederConsumed);
         if (avail < minAvail) minAvail = avail;
       });
       feederKit = minAvail === 999999 ? 0 : minAvail;
@@ -866,9 +1159,10 @@ async function renderFlowDiagram(group) {
       successors.forEach(s => {
         const sWip = wipMap[s] || { inWip: 0, outWip: 0 };
         const sRawCfg = getStationRaw(group, s);
-        const sReq = Math.max(1, sRawCfg.subInit || 1);
-        const sManualAdded = sWip.inWip || 0;
-        const sFeederConsumed = Math.max(0, (sWip.outWip || 0) - sManualAdded) * sReq;
+        const sHasCfgSub = (sRawCfg.subInit !== undefined && sRawCfg.subInit !== null);
+        const sCfgSub = sHasCfgSub ? Math.max(0, parseInt(sRawCfg.subInit, 10) || 0) : 0;
+        const sManualAdded = (sWip.outWip === 0 && sHasCfgSub) ? sCfgSub : Math.max(sWip.inWip || 0, sCfgSub);
+        const sFeederConsumed = Math.max(0, (sWip.outWip || 0) - sManualAdded);
         if (sFeederConsumed > downstreamConsumed) downstreamConsumed = sFeederConsumed;
       });
       currentOutBuffer = Math.max(0, w.outWip - downstreamConsumed);
@@ -1050,9 +1344,9 @@ function refreshModalRawConfigs(group) {
     const preds = flowPairs.filter(p => p.to === st).map(p => p.from);
     const isRoot = preds.length === 0;
     const savedCfg = tempValues[st] || groupRaw[st] || {};
-    const hasRaw = !!(savedCfg.hasRaw || (savedCfg.rawInit && savedCfg.rawInit > 0));
-    const rawName = (savedCfg.rawName !== undefined && savedCfg.rawName !== null) ? savedCfg.rawName : "";
-    const rawInit = (savedCfg.rawInit !== undefined && savedCfg.rawInit !== null) ? savedCfg.rawInit : "";
+    const hasRaw = (savedCfg.hasRaw === true);
+    const rawName = (hasRaw && savedCfg.rawName !== undefined && savedCfg.rawName !== null) ? String(savedCfg.rawName) : "";
+    const rawInit = (hasRaw && savedCfg.rawInit !== undefined && savedCfg.rawInit !== null && savedCfg.rawInit !== "") ? savedCfg.rawInit : "";
 
     const div = document.createElement("div");
     if (isRoot) {
@@ -1065,7 +1359,7 @@ function refreshModalRawConfigs(group) {
         <span style="background:#bbf7d0; color:#14532d; font-size:11px; font-weight:bold; padding:3px 10px; border-radius:12px; border:1px solid #86efac; white-space:nowrap;">原料無限 ∞</span>
       `;
     } else {
-      const subInitVal = (savedCfg.subInit !== undefined && savedCfg.subInit !== null && savedCfg.subInit > 0) ? savedCfg.subInit : 1;
+      const subInitVal = (savedCfg.subInit !== undefined && savedCfg.subInit !== null) ? Math.max(0, parseInt(savedCfg.subInit, 10) || 0) : 0;
       div.style.cssText = "background:#fff; border:1px solid #fcd34d; border-radius:8px; padding:10px 14px; display:flex; flex-direction:column; gap:8px; box-sizing:border-box;";
       div.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1073,12 +1367,12 @@ function refreshModalRawConfigs(group) {
           <span style="font-size:11px; color:#b45309; background:#fef3c7; padding:2px 8px; border-radius:4px; font-weight:bold; border:1px solid #fde68a;">需前置工站：${preds.join(" + ")}</span>
         </div>
         <div style="display:flex; align-items:center; gap:8px; background:#fffbeb; padding:6px 10px; border-radius:6px; border:1px solid #fef08a; flex-wrap:wrap;">
-          <span style="font-size:12px; font-weight:bold; color:#92400e; white-space:nowrap;">📦 強制設定需要多少半成品：</span>
+          <span style="font-size:12px; font-weight:bold; color:#92400e; white-space:nowrap;">📦 站前半成品初始備料（選填，可為 0）：</span>
           <div style="display:inline-flex; align-items:center; background:#fff; border:1px solid #cbd5e1; border-radius:6px; padding:0 6px; box-sizing:border-box;">
-            <input type="number" id="modalSubInit_${st}" class="modal-sub-init" data-station="${st}" value="${subInitVal}" min="1" placeholder="1" style="border:none; outline:none; width:45px; padding:4px 0; font-size:13px; text-align:right; font-weight:bold; color:#1e40af;">
+            <input type="number" id="modalSubInit_${st}" class="modal-sub-init" data-station="${st}" value="${subInitVal}" min="0" placeholder="0" style="border:none; outline:none; width:45px; padding:4px 0; font-size:13px; text-align:right; font-weight:bold; color:#1e40af;">
             <span style="font-size:11px; font-weight:bold; color:#92400e; margin-left:3px; white-space:nowrap;">套</span>
           </div>
-          <span style="font-size:11px; color:#64748b;">(每生產 1 件需消耗前站半成品套數，開局由 0 套起算)</span>
+          <span style="font-size:11px; color:#64748b;">(可設為 0 或任意套數；設定後流程圖與計時器立即同步)</span>
         </div>
         <div style="display:flex; align-items:center; gap:6px;">
           <input type="checkbox" id="modalRawCheck_${st}" class="modal-raw-check" data-station="${st}" ${hasRaw ? "checked" : ""} style="cursor:pointer; width:14px; height:14px; margin:0;">
@@ -1088,19 +1382,24 @@ function refreshModalRawConfigs(group) {
         </div>
         <div id="modalRawBox_${st}" style="display:${hasRaw ? 'flex' : 'none'}; align-items:center; gap:6px; margin-left:20px; font-size:12px; flex-wrap:wrap; background:#f8fafc; padding:6px 10px; border-radius:6px; border:1px solid #e2e8f0;">
           <span style="color:#64748b; font-weight:bold; white-space:nowrap;">零件名稱:</span>
-          <input type="text" id="modalRawName_${st}" value="${rawName}" placeholder="自訂名稱 (如:螺絲)" style="padding:4px 8px; font-size:12px; flex:1; min-width:80px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;">
+          <input type="text" id="modalRawName_${st}" value="${rawName}" placeholder="" style="padding:4px 8px; font-size:12px; flex:1; min-width:80px; border:1px solid #cbd5e1; border-radius:4px; box-sizing:border-box;">
           <span style="color:#64748b; font-weight:bold; white-space:nowrap;">備料:</span>
           <div style="display:inline-flex; align-items:center; background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:0 4px; box-sizing:border-box;">
-            <input type="number" id="modalRawInit_${st}" value="${rawInit}" min="0" style="border:none; outline:none; width:36px; padding:3px 0; font-size:12px; text-align:right;">
+            <input type="number" id="modalRawInit_${st}" value="${rawInit}" placeholder="" min="0" style="border:none; outline:none; width:42px; padding:3px 0; font-size:12px; text-align:right;">
             <span style="font-size:11px; font-weight:bold; color:#64748b; margin-left:2px; white-space:nowrap;">顆</span>
           </div>
         </div>
       `;
       const chk = div.querySelector(`#modalRawCheck_${st}`);
       const box = div.querySelector(`#modalRawBox_${st}`);
-      if (chk && box) { chk.onchange = function() { box.style.display = this.checked ? "flex" : "none";
-
-    
+      const nameInp = div.querySelector(`#modalRawName_${st}`);
+      const initInp = div.querySelector(`#modalRawInit_${st}`);
+      if (chk && box) {
+        chk.onchange = function() {
+          box.style.display = this.checked ? "flex" : "none";
+          // 勾選或取消勾選時皆不自動帶入任何預設值，保持空白讓使用者自行輸入
+          if (nameInp) nameInp.value = "";
+          if (initInp) initInp.value = "";
         };
       }
     }
@@ -1183,19 +1482,21 @@ async function saveCustomFlow() {
     let subInitVal = 0;
     if (!isRoot) {
       const subInp = document.getElementById(`modalSubInit_${st}`);
-      subInitVal = subInp ? (parseInt(subInp.value, 10) || 0) : 4;
+      const parsed = (subInp && subInp.value !== "") ? parseInt(subInp.value, 10) : 0;
+      subInitVal = (!isNaN(parsed) && parsed >= 0) ? parsed : 0;
     }
 
     const chk = document.getElementById(`modalRawCheck_${st}`);
     const hasRaw = chk ? chk.checked : false;
     const nameInput = document.getElementById(`modalRawName_${st}`);
     const initInput = document.getElementById(`modalRawInit_${st}`);
+    const rawInitStr = (hasRaw && initInput) ? initInput.value.trim() : "";
     newGroupRaw[st] = {
       isRoot: isRoot,
       subInit: isRoot ? 0 : subInitVal,
       hasRaw: hasRaw,
       rawName: (hasRaw && nameInput) ? nameInput.value.trim() : "",
-      rawInit: (hasRaw && initInput) ? (parseInt(initInput.value, 10) || 0) : 0
+      rawInit: rawInitStr !== "" ? (parseInt(rawInitStr, 10) || 0) : ""
     };
   });
   allRaw[group] = newGroupRaw;
@@ -1235,30 +1536,30 @@ async function saveCustomFlow() {
       } catch(e) {}
     }
 
-    // 🌟 同步更新每站的 station_wip：所有工站初始 input_wip = 0（後續工站須等待前站完工送達半成品才可開工）
+    // 🌟 同步更新每站的 station_wip：起始站 input_wip = 0，後續工站立即套用設定之半成品數 subInit (可為 0 或任意正整數)
     try {
       for (const st of activeStations) {
-        const initialInput = 0;
+        const preds = payload.filter(p => (p.next_station_id || "").trim() === st).map(p => (p.station_id || "").trim());
+        const isRoot = preds.length === 0;
+        const initialInput = isRoot ? 0 : (newGroupRaw[st]?.subInit ?? 0);
 
         const checkRes = await fetch(`${SUPABASE_URL}/rest/v1/station_wip?group_id=eq.${encodeURIComponent(group)}&station_id=eq.${encodeURIComponent(st)}&select=id,input_wip,output_wip`, {
           headers: { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY }
         });
         const existing = await checkRes.json();
         if (existing && existing.length > 0) {
-          if (clearOld) {
-            await fetch(`${SUPABASE_URL}/rest/v1/station_wip?id=eq.${existing[0].id}`, {
-              method: "PATCH",
-              headers: {
-                apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                input_wip: 0,
-                output_wip: 0,
-                updated_at: new Date().toISOString()
-              })
-            });
-          }
+          await fetch(`${SUPABASE_URL}/rest/v1/station_wip?id=eq.${existing[0].id}`, {
+            method: "PATCH",
+            headers: {
+              apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              input_wip: initialInput,
+              output_wip: clearOld ? 0 : existing[0].output_wip,
+              updated_at: new Date().toISOString()
+            })
+          });
         } else {
           await fetch(`${SUPABASE_URL}/rest/v1/station_wip`, {
             method: "POST",
@@ -1317,8 +1618,8 @@ function showTable(data) {
   tbody.innerHTML = "";
 
   const totalCount = data.length;
-  const officialCount = data.filter(r => !r.product_id || !r.product_id.startsWith("TEST-")).length;
-  const testCount = data.filter(r => r.product_id && r.product_id.startsWith("TEST-")).length;
+  const officialCount = data.filter(r => !isTestProductId(r.product_id)).length;
+  const testCount = data.filter(r => isTestProductId(r.product_id)).length;
 
   const elAll = document.getElementById("countAll");
   const elOff = document.getElementById("countOfficial");
@@ -1329,9 +1630,15 @@ function showTable(data) {
 
   let filtered = data;
   if (currentTableFilter === "OFFICIAL") {
-    filtered = data.filter(r => !r.product_id || !r.product_id.startsWith("TEST-"));
+    filtered = data.filter(r => !isTestProductId(r.product_id));
   } else if (currentTableFilter === "TEST") {
-    filtered = data.filter(r => r.product_id && r.product_id.startsWith("TEST-"));
+    filtered = data.filter(r => {
+      if (!isTestProductId(r.product_id)) return false;
+      if (currentTestRoundFilter !== "ALL_TEST") {
+        return getTestRoundFromProductId(r.product_id) === parseInt(currentTestRoundFilter, 10);
+      }
+      return true;
+    });
   }
 
   filtered.forEach((row, idx) => {
@@ -1357,9 +1664,10 @@ function showTable(data) {
       shortId,
       row.group_id,
       (() => {
-        const isTest = (row.product_id || "").startsWith("TEST-");
+        const isTest = isTestProductId(row.product_id);
+        const tRound = getTestRoundFromProductId(row.product_id);
         return isTest
-          ? `<span style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold; margin-right:4px;">🧪測試</span><b>${row.product_id || '-'}</b>`
+          ? `<span style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold; margin-right:4px;">🧪第${tRound || 1}次測試</span><b>${row.product_id || '-'}</b>`
           : `<span style="background:#dcfce7; color:#15803d; border:1px solid #86efac; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold; margin-right:4px;">🏆正式</span><b>${row.product_id || '-'}</b>`;
       })(),
       row.station_id,
@@ -1420,9 +1728,15 @@ function showStats(data) {
 
   let completed = data.filter(r => r.status === "COMPLETED");
   if (currentTableFilter === "OFFICIAL") {
-    completed = completed.filter(r => !r.product_id || !r.product_id.startsWith("TEST-"));
+    completed = completed.filter(r => !isTestProductId(r.product_id));
   } else if (currentTableFilter === "TEST") {
-    completed = completed.filter(r => r.product_id && r.product_id.startsWith("TEST-"));
+    completed = completed.filter(r => {
+      if (!isTestProductId(r.product_id)) return false;
+      if (currentTestRoundFilter !== "ALL_TEST") {
+        return getTestRoundFromProductId(r.product_id) === parseInt(currentTestRoundFilter, 10);
+      }
+      return true;
+    });
   }
   const rows = completed;
 
@@ -1535,8 +1849,8 @@ function showStats(data) {
     const partNo = getStationPart(curGroup, station);
     const rawCfg = getStationRaw(curGroup, station);
     let partCell = partNo ? `<span style="color:#1e40af; font-weight:bold;">${partNo}</span>` : `<span style="color:#94a3b8;">-</span>`;
-    if (rawCfg.hasRaw) {
-      partCell += `<br><span style="font-size:11px; color:#b45309; font-weight:bold;">📦 含${rawCfg.rawName || '零件5'}</span>`;
+    if (rawCfg.hasRaw && rawCfg.rawName) {
+      partCell += `<br><span style="font-size:11px; color:#b45309; font-weight:bold;">📦 含${rawCfg.rawName}</span>`;
     }
 
     const rowData = [
@@ -1616,12 +1930,7 @@ document.getElementById("downloadBtn").onclick = () => {
     const r = [
       row.id,
       row.group_id,
-      (() => {
-        const isTest = (row.product_id || "").startsWith("TEST-");
-        return isTest
-          ? `<span style="background:#f3e8ff; color:#7e22ce; border:1px solid #d8b4fe; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold; margin-right:4px;">🧪測試</span><b>${row.product_id || '-'}</b>`
-          : `<span style="background:#dcfce7; color:#15803d; border:1px solid #86efac; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold; margin-right:4px;">🏆正式</span><b>${row.product_id || '-'}</b>`;
-      })(),
+      row.product_id ?? "",
       row.station_id,
       `"${partNo || ''}"`,
       row.wip_before_start ?? "",
