@@ -35,3 +35,24 @@ https://mrjohnny461-png.github.io/qr/timer.html
 
 IE Chair 組裝線即時監控中心
 https://mrjohnny461-png.github.io/qr/工蓋螢幕.htm
+
+
+=================================================================
+
+甲: 
+
+https://lctsaio365.github.io/Class_A/qrcode.html
+
+ https://lctsaio365.github.io/Class_A/timer.html
+
+ https://lctsaio365.github.io/Class_A/工蓋螢幕.html
+
+
+
+乙
+
+ https://lctsaio365.github.io/Class_B/工蓋螢幕.html
+
+ https://lctsaio365.github.io/Class_B/timer.html
+
+ https://lctsaio365.github.io/Class_B/qrcode.html
